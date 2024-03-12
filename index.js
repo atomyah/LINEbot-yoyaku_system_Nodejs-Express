@@ -33,7 +33,9 @@ const processEvent = async (ev) => {
         case 'follow':
             await greeting_follow(ev);
             break;
-        // 他のイベントに対する処理を追加できます
+        case 'message':
+            await handleMessageEvent(ev);
+            break;
     }
 };
 
@@ -65,3 +67,23 @@ const greeting_follow = async (ev) => {
     });
  }
  
+
+// handleMessageEvent関数（オウム返し）
+// 参考↓ evの中身
+// ev: {
+//     type: 'message',
+//     replyToken: 'xxxxxxxxxxxxxxx',
+//     source: { userId: 'yyyyyyyyyyyyyy', type: 'user' },
+//     timestamp: 1601102227933,
+//     mode: 'active',
+//     message: { type: 'text', id: 'zzzzzzzzzzzz', text: 'こんにちは' }
+//     }
+const handleMessageEvent = async (ev) => {
+const profile = await client.getProfile(ev.source.userId);
+const text = (ev.message.type === 'text') ? ev.message.text : '';
+
+return client.replyMessage(ev.replyToken,{
+    "type":"text",
+    "text":`${profile.displayName}さん、今${text}って言いました？`
+});
+}
