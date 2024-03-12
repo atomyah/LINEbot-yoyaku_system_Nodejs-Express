@@ -28,18 +28,6 @@ connection.query(create_userTable)
    .catch(e=>console.log(e));
 
 
-// INSERT INTO TABLE（顧客データ）テーブルへデータ挿入
-const table_insert = {
-    text:'INSERT INTO users (line_uid,display_name,timestamp,cuttime,shampootime,colortime,spatime) VALUES($1,$2,$3,$4,$5,$6,$7);',
-    values:[ev.source.userId,profile.displayName,ev.timestamp,INITIAL_TREAT[0],INITIAL_TREAT[1],INITIAL_TREAT[2],INITIAL_TREAT[3]]
-  };
-  connection.query(table_insert)
-    .then(()=>{
-       console.log('insert successfully!!')
-     })
-    .catch(e=>console.log(e));
-
-
 
 // LINE Messaging APIコンフィグ
 const config = {
@@ -106,6 +94,19 @@ const greeting_follow = async (ev) => {
     });
  }
  
+
+// INSERT INTO TABLE（顧客データ）テーブルへデータ挿入
+const table_insert = {
+    text:'INSERT INTO users (line_uid,display_name,timestamp,cuttime,shampootime,colortime,spatime) VALUES($1,$2,$3,$4,$5,$6,$7);',
+    values:[ev.source.userId,profile.displayName,ev.timestamp,INITIAL_TREAT[0],INITIAL_TREAT[1],INITIAL_TREAT[2],INITIAL_TREAT[3]]
+  };
+  connection.query(table_insert)
+    .then(()=>{
+       console.log('insert successfully!!')
+     })
+    .catch(e=>console.log(e));
+
+    
 
 // handleMessageEvent関数（オウム返し）
 // 参考↓ evの中身
