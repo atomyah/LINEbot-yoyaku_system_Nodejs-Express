@@ -4,6 +4,10 @@ const line = require('@line/bot-sdk');
 const PORT = process.env.PORT || 5000
 const { Client } = require('pg');
 
+
+const INITIAL_TREAT = [20,10,40,15,30,15,10];  //施術時間初期値
+
+
 // Heroku Postgres接続コンフィグコード
 const connection = new Client({
     connectionString: process.env.DATABASE_URL,
@@ -13,7 +17,7 @@ const connection = new Client({
 });
 connection.connect();
 
-// Create users（顧客データ）作成
+// CREATE TABLE（顧客データ）テーブル作成
 const create_userTable = {
     text:'CREATE TABLE IF NOT EXISTS users (id SERIAL NOT NULL, line_uid VARCHAR(255), display_name VARCHAR(255), timestamp VARCHAR(255), cuttime SMALLINT, shampootime SMALLINT, colortime SMALLINT, spatime SMALLINT);'
 };
@@ -22,6 +26,18 @@ connection.query(create_userTable)
        console.log('table users created successfully!!');
    })
    .catch(e=>console.log(e));
+
+
+// INSERT INTO TABLE（顧客データ）テーブルへデータ挿入
+const table_insert = {
+    text:'INSERT INTO users (line_uid,display_name,timestamp,cuttime,shampootime,colortime,spatime) VALUES($1,$2,$3,$4,$5,$6,$7);',
+    values:[ev.source.userId,profile.displayName,ev.timestamp,INITIAL_TREAT[0],INITIAL_TREAT[1],INITIAL_TREAT[2],INITIAL_TREAT[3]]
+  };
+  connection.query(table_insert)
+    .then(()=>{
+       console.log('insert successfully!!')
+     })
+    .catch(e=>console.log(e));
 
 
 
