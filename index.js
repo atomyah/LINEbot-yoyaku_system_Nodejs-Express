@@ -14,6 +14,9 @@ const connection = new Client({
 connection.connect();
 
 // Create users（顧客データ）作成
+const create_userTable = {
+    text:'CREATE TABLE IF NOT EXISTS users (id SERIAL NOT NULL, line_uid VARCHAR(255), display_name VARCHAR(255), timestamp VARCHAR(255), cuttime SMALLINT, shampootime SMALLINT, colortime SMALLINT, spatime SMALLINT);'
+};
 connection.query(create_userTable)
    .then(()=>{
        console.log('table users created successfully!!');
@@ -21,7 +24,7 @@ connection.query(create_userTable)
    .catch(e=>console.log(e));
 
 
-   
+
 // LINE Messaging APIコンフィグ
 const config = {
    channelAccessToken:process.env.ACCESS_TOKEN,
