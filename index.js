@@ -90,22 +90,24 @@ const lineBot = async (req, res) => {
 //     }
 const greeting_follow = async (ev) => {
     const profile = await client.getProfile(ev.source.userId);
+
+    // CREATE TABLE（顧客データ）テーブルデータ挿入
+    const table_insert = {
+        text:'INSERT INTO users (line_uid,display_name,timestamp,cuttime,shampootime,colortime,spatime) VALUES($1,$2,$3,$4,$5,$6,$7);',
+        values:[ev.source.userId,profile.displayName,ev.timestamp,INITIAL_TREAT[0],INITIAL_TREAT[1],INITIAL_TREAT[2],INITIAL_TREAT[3]]
+      };
+      await connection.query(table_insert)
+        .then(()=>{
+           console.log('insert successfully!!')
+         })
+        .catch(e=>console.log(e));
+
+
     return client.replyMessage(ev.replyToken,{
         "type":"text",
         "text":`${profile.displayName}さん、フォローありがとうございます\uDBC0\uDC04`
     });
 
-    // INSERT INTO TABLE（顧客データ）テーブルへデータ挿入
-    const table_insert = {
-        text:'INSERT INTO users (line_uid,display_name,timestamp,cuttime,shampootime,colortime,spatime) VALUES($1,$2,$3,$4,$5,$6,$7);',
-        values:[ev.source.userId,profile.displayName,ev.timestamp,INITIAL_TREAT[0],INITIAL_TREAT[1],INITIAL_TREAT[2],INITIAL_TREAT[3]]
-    };
-    connection.query(table_insert)
-        .then(()=>{
-        console.log('insert successfully!!')
-        })
-        .catch(e=>console.log(e));
-        
  }
  
 
