@@ -29,17 +29,6 @@ connection.query(create_userTable)
    .catch(e=>console.log(e));
 
 
-// INSERT INTO TABLE（顧客データ）テーブルへデータ挿入
-const table_insert = {
-    text:'INSERT INTO users (line_uid,display_name,timestamp,cuttime,shampootime,colortime,spatime) VALUES($1,$2,$3,$4,$5,$6,$7);',
-    values:[ev.source.userId,profile.displayName,ev.timestamp,INITIAL_TREAT[0],INITIAL_TREAT[1],INITIAL_TREAT[2],INITIAL_TREAT[3]]
-  };
-  connection.query(table_insert)
-    .then(()=>{
-       console.log('insert successfully!!')
-     })
-    .catch(e=>console.log(e));
-
     
 
 // LINE Messaging APIコンフィグ
@@ -65,29 +54,29 @@ app
 //     mode: 'active'
 //     }
 const lineBot = async (req, res) => {
-res.status(200).end();
-const events = req.body.events;
+    res.status(200).end();
+    const events = req.body.events;
 
-const processEvent = async (ev) => {
-    switch(ev.type){
-        case 'follow':
-            await greeting_follow(ev);
-            break;
-        case 'message':
-            await handleMessageEvent(ev);
-            break;
+    const processEvent = async (ev) => {
+        switch(ev.type){
+            case 'follow':
+                await greeting_follow(ev);
+                break;
+            case 'message':
+                await handleMessageEvent(ev);
+                break;
+        }
+    };
+
+    try {
+        for (const ev of events) {
+            await processEvent(ev);
+        }
+
+        console.log('all promises passed');
+    } catch (error) {
+        console.error(error.stack);
     }
-};
-
-try {
-    for (const ev of events) {
-        await processEvent(ev);
-    }
-
-    console.log('all promises passed');
-} catch (error) {
-    console.error(error.stack);
-}
 };
 
 
@@ -105,6 +94,18 @@ const greeting_follow = async (ev) => {
         "type":"text",
         "text":`${profile.displayName}さん、フォローありがとうございます\uDBC0\uDC04`
     });
+
+    // INSERT INTO TABLE（顧客データ）テーブルへデータ挿入
+    const table_insert = {
+        text:'INSERT INTO users (line_uid,display_name,timestamp,cuttime,shampootime,colortime,spatime) VALUES($1,$2,$3,$4,$5,$6,$7);',
+        values:[ev.source.userId,profile.displayName,ev.timestamp,INITIAL_TREAT[0],INITIAL_TREAT[1],INITIAL_TREAT[2],INITIAL_TREAT[3]]
+    };
+    connection.query(table_insert)
+        .then(()=>{
+        console.log('insert successfully!!')
+        })
+        .catch(e=>console.log(e));
+        
  }
  
 
