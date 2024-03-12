@@ -2,7 +2,27 @@ const express = require('express');
 const app = express();
 const line = require('@line/bot-sdk');
 const PORT = process.env.PORT || 5000
+const { Client } = require('pg');
 
+// Heroku Postgres接続コンフィグコード
+const connection = new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false
+    }
+});
+connection.connect();
+
+// Create users（顧客データ）作成
+connection.query(create_userTable)
+   .then(()=>{
+       console.log('table users created successfully!!');
+   })
+   .catch(e=>console.log(e));
+
+
+   
+// LINE Messaging APIコンフィグ
 const config = {
    channelAccessToken:process.env.ACCESS_TOKEN,
    channelSecret:process.env.CHANNEL_SECRET
