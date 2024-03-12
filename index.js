@@ -8,8 +8,7 @@ const config = {
    channelSecret:process.env.CHANNEL_SECRET
 };
 
-// line.Client の代わりに line.ClientBuilder を使用
-const client = new line.ClientBuilder(config).build();
+const client = new line.Client(config);
 
 app
    .post('/hook',line.middleware(config),(req,res)=> lineBot(req,res))
