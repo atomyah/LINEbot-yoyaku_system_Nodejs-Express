@@ -93,6 +93,7 @@ const greeting_follow = async (ev) => {
 
     // CREATE TABLE（顧客データ）テーブルデータ挿入
     const table_insert = {
+        // VALUES($1,$2,$3,$4,$5,$6,$7) は、SQLのプリペアドステートメントで使用されるパラメーター. $1がline_uid, $2がtimestampを表す.SQLインジェクション攻撃を防ぐためだけに必要
         text:'INSERT INTO users (line_uid,display_name,timestamp,cuttime,shampootime,colortime,spatime) VALUES($1,$2,$3,$4,$5,$6,$7);',
         values:[ev.source.userId,profile.displayName,ev.timestamp,INITIAL_TREAT[0],INITIAL_TREAT[1],INITIAL_TREAT[2],INITIAL_TREAT[3]]
       };
@@ -123,11 +124,18 @@ const greeting_follow = async (ev) => {
 //     message: { type: 'text', id: 'zzzzzzzzzzzz', text: 'こんにちは' }
 //     }
 const handleMessageEvent = async (ev) => {
-const profile = await client.getProfile(ev.source.userId);
-const text = (ev.message.type === 'text') ? ev.message.text : '';
+    const profile = await client.getProfile(ev.source.userId);
+    const text = (ev.message.type === 'text') ? ev.message.text : '';
 
-return client.replyMessage(ev.replyToken,{
-    "type":"text",
-    "text":`${profile.displayName}さん、今${text}って言いました？`
-});
+    if(text === '予約する'){
+        return client.replyMessage(ev.replyToken,{
+            "type":"text",
+            "text":"かしこまりました。次回予約ですね。メニューは・・・"
+        });
+    }else{
+        return client.replyMessage(ev.replyToken,{
+            "type":"text",
+            "text":`${profile.displayName}さん、今${text}って言いました？`
+        });
+    }
 }
