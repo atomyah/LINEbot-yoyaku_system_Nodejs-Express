@@ -39,12 +39,15 @@ const config = {
 
 const client = new line.Client(config);
 
+// Herokuの本番URL：https://linebot-yoyaku-a5f58ab954a7.herokuapp.comに/hookスラグを追加したもの
+// https://linebot-yoyaku-a5f58ab954a7.herokuapp.com/hook/ を
+// LINE Messaging APIのWebhook URL欄に設定．
 app
    .post('/hook',line.middleware(config),(req,res)=> lineBot(req,res))
    .listen(PORT,()=>console.log(`Listening on ${PORT}`));
 
 
-// lineBot関数
+// lineBot関数(mainとなる関数.evのtypeによって振り分け)
 // 参考↓ evの中身
 // ev: {
 //     type: 'follow',
@@ -65,6 +68,8 @@ const lineBot = async (req, res) => {
             case 'message':
                 await handleMessageEvent(ev);
                 break;
+            case 'postback':
+                await handlePostbackEvent(ev);
         }
     };
 
@@ -81,7 +86,7 @@ const lineBot = async (req, res) => {
 
 
 
-// greeting_follow関数
+// greeting_follow関数．フォローされたら挨拶を返す．
 // 参考↓ profileの中身
 // profile: {
 //     userId: 'xxxxxxxxxxxx',
@@ -113,7 +118,7 @@ const greeting_follow = async (ev) => {
  
 
 
-// handleMessageEvent関数（オウム返し）
+// handleMessageEvent関数（'予約する'のmessageだった場合Flex Messageを表示．その他の場合オウム返し）
 // 参考↓ evの中身
 // ev: {
 //     type: 'message',
@@ -137,6 +142,30 @@ const handleMessageEvent = async (ev) => {
     }
 }
 
+// handlePostbackEvent関数(menu&xのxをorderMenuに格納しaskData(ev,[選ばれたメニュー])を実行)
+// 参考↓ evの中身
+// ev:{
+// type: 'postback',
+// replyToken: 'xxxxxxxxxxxxxxxxx',
+// source: { userId: 'yyyyyyyyyyyyyyyy', type: 'user' },
+// timestamp: 1601177107159,
+// mode: 'active',
+// postback: { data: 'menu&0' }
+// }
+const handlePostbackEvent = async (ev) => {
+  const profile = await client.getProfile(ev.source.userId);
+  const data = ev.postback.data;
+  const splitData = data.split('&');
+  
+  if(splitData[0] === 'menu'){
+      const orderedMenu = splitData[1];
+      askDate(ev,orderedMenu);
+  }
+}
+
+
+
+// LINE Flex Message（予約の起点画面）を表示する関数
 const orderChoice = (ev) => {
     return client.replyMessage(ev.replyToken, {
         "type":"flex",
@@ -317,3 +346,42 @@ const orderChoice = (ev) => {
           }
     });
 }
+
+// LINE Flex Message（予約希望日を聞く）を表示する関数
+const askDate = (ev,orderedMenu) => {
+  return client.replyMessage(ev.replyToken), {
+    "type":"flex",
+    "altText":"予約日選択",
+    "contents":
+    {
+      "type": "bubble",
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "予約希望日を選択して下さい",
+            "align": "center"
+          }
+        ]
+      },
+      "footer": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "button",
+            "action": {
+              "type": "datetimepicker",
+              "label": "希望日を選択する",
+              "data": `date&${orderedMenu}`,
+              "mode": "date"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+
