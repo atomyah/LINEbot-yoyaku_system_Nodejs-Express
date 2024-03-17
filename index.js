@@ -370,7 +370,7 @@ const askDate = (ev,orderedMenu) => {
               "action": {
                 "type": "datetimepicker",
                 "label": "希望日を選択する",
-                "data": "date",
+                "data": `date&${orderedMenu}`,
                 "mode": "date"
               }
             }
