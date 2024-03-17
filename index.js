@@ -143,6 +143,7 @@ const handleMessageEvent = async (ev) => {
 }
 
 // handlePostbackEvent関数(menu&xのxをorderMenuに格納しaskData(ev,[選ばれたメニュー])を実行)
+////////////////////////////////////////////////////////////////////////////////
 // Flexのメニューを選択した時のevの中身
 // ev:{
 // type: 'postback',
@@ -152,6 +153,7 @@ const handleMessageEvent = async (ev) => {
 // mode: 'active',
 // postback: { data: 'menu&0' }
 // }
+////////////////////////////////////////////////////////////////////////////////
 // 予約希望日のカレンダの日付とOKボタンをクリックしたときのevの中身
 // ev: {
 //   type: 'postback',
@@ -161,10 +163,23 @@ const handleMessageEvent = async (ev) => {
 //   mode: 'active',
 //   postback: { data: 'date&0', params: {date: '2020-09-30' } }
 // }
+////////////////////////////////////////////////////////////////////////////////
+// 予約希望時間帯とOKボタンをクリックしたときのevの中身
+// ev: {
+//   type: 'postback',
+//   replyToken: 'xxxxxxxxxxxxxxxxxxx',
+//   source: { userId: 'yyyyyyyyyyyyy', type: 'user' },
+//   timestamp: 1601554070567,
+//   mode: 'active',
+//   postback: { data: 'time&4&2020-09-30&3' }
+//   }
 const handlePostbackEvent = async (ev) => {
   const profile = await client.getProfile(ev.source.userId);
   const data = ev.postback.data;
   const splitData = data.split('&');
+
+  //splitData配列例：[ 'time', '4', '2020-09-30', '3' ] timeは希望時間帯のpostbackだよ、という意味．
+  // 4は希望メニューの「ﾏｯｻｰｼﾞ&ﾊﾟｯｸ」のこと、3は予約時間帯１２時台を表す．
   
   if(splitData[0] === 'menu'){
       const orderedMenu = splitData[1];
@@ -173,6 +188,11 @@ const handlePostbackEvent = async (ev) => {
       const orderedMenu = splitData[1];
       const selectedDate = ev.postback.params.date;
       askTime(ev, orderedMenu, selectedDate);
+  }else if(splitData[0] === 'time'){
+      const orderedMenu = splitData[1]; // 4
+      const selectedDate = splitData[2]; // 2020-09-30
+      const selectedTime = splitData[3]; // 3
+      confirmation(ev,orderedMenu,selectedDate,selectedTime);
   }
 }
 
@@ -584,3 +604,56 @@ const askTime = (ev,orderedMenu,selectedDate) => {
         }       
   });
 }
+
+
+// LINE Flex Message（確認（はい、いいえ））を表示するconfirmation関数
+// handlePostbackEvent()関数の中のconfirmation(ev,orderedMenu,selectedDate,selectedTime);
+const confirmation = (ev,menu,date,time) => {
+  const splitDate = date.split('-');
+  const selectedTime = 9 + parseInt(time); // timeは文字列なのでparseIntで数値型に．0->9に9時->19時を割り当ててるので（例：3は１２時）9を足している．
+  
+  return client.replyMessage(ev.replyToken,{
+    "type":"flex",
+    "altText":"menuSelect",
+    "contents":
+    {
+      "type": "bubble",
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": `次回予約は${splitDate[1]}月${splitDate[2]}日 ${selectedTime}時〜でよろしいでしょうか？`,
+            "wrap": true
+          },
+          {
+            "type": "separator"
+          }
+        ]
+      },
+      "footer": {
+        "type": "box",
+        "layout": "horizontal",
+        "contents": [
+          {
+            "type": "button",
+            "action": {
+              "type": "postback",
+              "label": "はい",
+              "data": `yes&${menu}&${date}&${time}`
+            }
+          },
+          {
+            "type": "button",
+            "action": {
+              "type": "postback",
+              "label": "いいえ",
+              "data": `no&${menu}&${date}&${time}`
+            }
+          }
+        ]
+      }
+    }
+  });
+ }
