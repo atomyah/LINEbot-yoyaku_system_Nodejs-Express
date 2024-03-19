@@ -6,7 +6,7 @@ const { Client } = require('pg');
 
 
 const INITIAL_TREAT = [20,10,40,15,30,15,10];  //施術時間初期値
-
+// 「カット、シャンプー、カラーリンング、ヘッドスパ、ﾏｯｻｰｼﾞ&ﾊﾟｯｸ、眉整え、顔そり」にかかるデフォルトの時間
 
 // Heroku Postgres接続コンフィグコード
 const connection = new Client({
@@ -18,7 +18,7 @@ const connection = new Client({
 connection.connect();
 
 
-// CREATE TABLE（顧客データ）テーブル作成
+// CREATE TABLE（顧客データ）テーブル作成．カット、シャンプー、カラーリンング、ヘッドスパの時間は顧客ごとに異なるため顧客データベースの項目に入れ後で変更可能にする．
 const create_userTable = {
     text:'CREATE TABLE IF NOT EXISTS users (id SERIAL NOT NULL, line_uid VARCHAR(255), display_name VARCHAR(255), timestamp VARCHAR(255), cuttime SMALLINT, shampootime SMALLINT, colortime SMALLINT, spatime SMALLINT);'
 };
@@ -173,6 +173,16 @@ const handleMessageEvent = async (ev) => {
 //   mode: 'active',
 //   postback: { data: 'time&4&2020-09-30&3' }
 //   }
+////////////////////////////////////////////////////////////////////////////////
+// 「次回予約は・・・でよろしいでしょうか？」の確認で「はい」をクリックした時のevの中身
+// ev: {
+//   type: 'postback',
+//   replyToken: 'xxxxxxxxxxxxxxxxxx',
+//   source: { userId: 'yyyyyyyyyyyyyyyyyyy', type: 'user' },
+//   timestamp: 1601720974565,
+//   mode: 'active',
+//   postback: { data: 'yes&4&2020-09-30&10' },
+//   }
 const handlePostbackEvent = async (ev) => {
   const profile = await client.getProfile(ev.source.userId);
   const data = ev.postback.data;
@@ -193,8 +203,53 @@ const handlePostbackEvent = async (ev) => {
       const selectedDate = splitData[2]; // 2020-09-30
       const selectedTime = splitData[3]; // 3
       confirmation(ev,orderedMenu,selectedDate,selectedTime);
+  }else if(splitData[0] === 'yes'){
+    const orderedMenu = splitData[1];
+    const selectedDate = splitData[2];
+    const selectedTime = splitData[3];
+    const startTimestamp = timeConversion(selectedDate,selectedTime);
+    console.log('その1');
+    const treatTime = calcTreatTime(ev.source.userId,orderedMenu);
+    const endTimestamp = startTimestamp + treatTime*60*1000;  // calcTreatTime関数から帰ってきたtreatTimeは分単位なのでミリ秒に変換.
+    console.log('その4');
+    console.log('endTime:',endTimestamp);
+  }else if(splitData[0] === 'no'){
+    // あとで何か入れる
   }
 }
+
+/// 施術開始時間を1970年1/1 0時からのミリ秒で取得する
+const timeConversion = (date,time) => {
+  const selectedTime = 9 + parseInt(time) - 9;  // 開店9時なので9をプラス、new Date( )で勝手に日本標準時間の+9時間分のミリ秒が足されてしまうため、-9としている．
+  return new Date(`${date} ${selectedTime}:00`).getTime();
+}
+
+/// userIdと選んだメニューから該当するユーザー情報を取り出し（line_uid = $1）、ユーザが存在すれば（if(res.rows.length)）
+/// そのカット、シャンプー、カラー、スパ、INITIAL_TREAT[4]～[6]（ﾏｯｻｰｼﾞ&ﾊﾟｯｸ、眉整え、顔そり）の各施術時間をtreatArray配列
+/// に格納．メニュー番号は文字列を通知型にし（parseInt(menu)）、treatArray[]のインデックスとして使用できるようにする．
+/// 選んだメニューはひとつだけなので、それにかかる時間（treatArray[menuNumber]）をtreatTimeに格納し返す（分単位）．
+const calcTreatTime = (id,menu) => {
+  console.log('その2');
+  const selectQuery = {
+    text: 'SELECT * FROM users WHERE line_uid = $1;',
+    values: [`${id}`]
+  };
+  connection.query(selectQuery)
+  .then(res=>{
+    console.log('その3');
+    if(res.rows.length){
+      const info = res.rows[0];
+      const treatArray = [info.cuttime,info.shampootime,info.colortime,info.spatime,INITIAL_TREAT[4],INITIAL_TREAT[5],INITIAL_TREAT[6]];
+      const menuNumber = parseInt(menu);
+      const treatTime = treatArray[menuNumber];
+      return treatTime;
+    }else{
+      console.log('LINE IDに一致するユーザーが見つかりません。');
+      return;
+    }
+  })
+  .catch(e=>console.log(e));
+ }
 
 
 
