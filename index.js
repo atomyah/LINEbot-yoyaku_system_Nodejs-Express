@@ -29,7 +29,17 @@ connection.query(create_userTable)
    .catch(e=>console.log(e));
 
 
-    
+// 予約データベース作成．
+const create_reservationTable = {
+text:'CREATE TABLE IF NOT EXISTS reservations (id SERIAL NOT NULL, line_uid VARCHAR(255), name VARCHAR(100), scheduledate DATE, starttime BIGINT, endtime BIGINT, menu VARCHAR(50));'
+};
+connection.query(create_reservationTable)
+.then(()=>{
+    console.log('table users created successfully!!');
+})
+.catch(e=>console.log(e));
+
+
 
 // LINE Messaging APIコンフィグ
 const config = {
@@ -213,6 +223,19 @@ const handlePostbackEvent = async (ev) => {
     const endTimestamp = startTimestamp + treatTime*60*1000;  // calcTreatTime関数から帰ってきたtreatTimeは分単位なのでミリ秒に変換.
     console.log('その4');
     console.log('endTime:',endTimestamp);
+    const insertQuery = {
+      text:'INSERT INTO reservations (line_uid, name, scheduledate, starttime, endtime, menu) VALUES($1,$2,$3,$4,$5,$6);',
+      values:[ev.source.userId,profile.displayName,selectedDate,startTimestamp,endTimestamp,orderedMenu]
+    };
+    connection.query(insertQuery)
+    .then(res=>{
+      console.log('データ格納成功！');
+      client.replyMessage(ev.replyToken,{
+        "type":"text",
+        "text":"予約が完了しました。"
+      });
+    })
+    .catch(e=>console.log(e));
   }else if(splitData[0] === 'no'){
     // あとで何か入れる
   }
