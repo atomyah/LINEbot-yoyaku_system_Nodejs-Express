@@ -5,8 +5,16 @@ const PORT = process.env.PORT || 5000
 const { Client } = require('pg');
 
 
+//// グローバル変数 ////
 const INITIAL_TREAT = [20,10,40,15,30,15,10];  //施術時間初期値
 // 「カット、シャンプー、カラーリンング、ヘッドスパ、ﾏｯｻｰｼﾞ&ﾊﾟｯｸ、眉整え、顔そり」にかかるデフォルトの時間
+
+const MENU = ['カット','シャンプー','カラーリング','ヘッドスパ','マッサージ＆スパ','眉整え','顔そり'];
+
+const WEEK = [ "日", "月", "火", "水", "木", "金", "土" ];
+//// グローバル変数ここまで ////
+
+
 
 // Heroku Postgres接続コンフィグコード
 const connection = new Client({
@@ -144,6 +152,15 @@ const handleMessageEvent = async (ev) => {
 
     if(text === '予約する'){
         orderChoice(ev);
+    }else if(text === '予約確認'){
+        const nextReservation = await checkNextReservation(ev);
+        const startTimestamp = nextReservation[0].starttime;
+        const date = dateConversion(startTimestamp);
+        const menu = MENU[parseInt(nextReservation[0].menu)];
+        return client.replyMessage(ev.replyToken,{
+          "type":"text",
+          "text":`次回予約は${date}、${menu}でお取りしてます\uDBC0\uDC22`
+        });
     }else{
         return client.replyMessage(ev.replyToken,{
             "type":"text",
@@ -151,6 +168,49 @@ const handleMessageEvent = async (ev) => {
         });
     }
 }
+
+
+// 予約確認関数checkNextReservation()
+const checkNextReservation = (ev) => {
+ return new Promise((resolve,reject)=>{
+    const id = ev.source.userId;
+    const nowTime = new Date().getTime();
+
+    const selectQuery = {
+      text:'SELECT * FROM reservations;'
+    };
+    connection.query(selectQuery)
+      .then(res=>{
+        if(res.rows.length){  // クエリを実行して返ってきた全予約データはres.rowsに格納．
+          const nextReservation = res.rows.filter(resultAll=>{  // 全予約データのうち「予約確認」メッセージを送った人のLINE IDに一致する予約をフィルタリング.
+            return resultAll.line_uid === id;
+          })
+          .filter(resultUser=>{
+            return parseInt(resultUser.starttime) >= nowTime; // さらにそのユーザーの現在(nowTime)より未来にある予約データをfiltering.
+          });
+          console.log('nextReservationは:',nextReservation);  // nextReservationは配列．
+          /// コンソール表示結果：nextReservationは：
+          resolve(nextReservation);
+        }else{
+          resolve([]);    // checkNextReservation()関数を呼び出す側が配列の戻りを期待してるので、nextReservationが無かった場合カラ配列を戻している。
+        }
+      })
+      .catch(e=>console.log(e));
+ });
+}
+
+
+// dateConversion()関数．タイムスタンプを日時、時刻の文字列に変換する．
+const dateConversion = (timestamp) => {     // timestampはデータベースから取得したものなので文字列型startTimestamp
+    const d = new Date(parseInt(timestamp));
+    const month = d.getMonth()+1;           // getMonth()メソッドで得られる数値は本来の値から1少ない数なので、+1
+    const date = d.getDate();
+    const day = d.getDay();
+    const hour = ('0' + (d.getHours()+9)).slice(-2);  // d.getHours()+9)が9だった場合9:00となる.1桁だと見栄えが悪いので09:00になるようにしてる．
+    const min = ('0' + d.getMinutes()).slice(-2);     // d.getMinutes()が5だった場合、14:5となる．１桁だと見栄え悪いので14:05になるようにしてる．
+    return `${month}月${date}日(${WEEK[day]}) ${hour}:${min}`;
+}
+
 
 // handlePostbackEvent関数(menu&xのxをorderMenuに格納しaskData(ev,[選ばれたメニュー])を実行)
 ////////////////////////////////////////////////////////////////////////////////
