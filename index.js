@@ -26,7 +26,7 @@ const connection = new Client({
 connection.connect();
 
 
-// CREATE TABLE（顧客データ）テーブル作成．カット、シャンプー、カラーリンング、ヘッドスパの時間は顧客ごとに異なるため顧客データベースの項目に入れ後で変更可能にする．
+// 顧客テーブル（users）作成．カット、シャンプー、カラーリンング、ヘッドスパの時間は顧客ごとに異なるため顧客データベースの項目に入れ後で変更可能にする．
 const create_userTable = {
     text:'CREATE TABLE IF NOT EXISTS users (id SERIAL NOT NULL, line_uid VARCHAR(255), display_name VARCHAR(255), timestamp VARCHAR(255), cuttime SMALLINT, shampootime SMALLINT, colortime SMALLINT, spatime SMALLINT);'
 };
@@ -37,7 +37,7 @@ connection.query(create_userTable)
    .catch(e=>console.log(e));
 
 
-// 予約データベース作成．
+// 予約テーブル(reservations)作成．
 const create_reservationTable = {
 text:'CREATE TABLE IF NOT EXISTS reservations (id SERIAL NOT NULL, line_uid VARCHAR(255), name VARCHAR(100), scheduledate DATE, starttime BIGINT, endtime BIGINT, menu VARCHAR(50));'
 };
@@ -163,10 +163,53 @@ const handleMessageEvent = async (ev) => {
         });
     }else if(text === '予約キャンセル'){
       const nextReservation = await checkNextReservation(ev);
+      // nextReservationの中身：[{id:1, line_uid:'U559cea57076f1f2383db950ef23125ac', name: 'Atom', scheduledate: 2024-04-01T00:00:00.000Z, starttime: '1711929600000', endtime: '1711930800000', menu: '0'}]
       if(nextReservation.length){
-        console.log('次回予約があります');
+          const startTimestamp = parseInt(nextReservation[0].starttime);
+          const menu = MENU[parseInt(nextReservation[0].menu)];
+          const date = dateConversion(startTimestamp);
+          const id = parseInt(nextReservation[0].id); // このidは予約テーブルのid. 
+          return client.replyMessage(ev.replyToken,{
+            "type":"flex",
+            "altText": "cancel message",
+            "contents":
+            {
+              "type": "bubble",
+              "body": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": `次回の予約は${date}から、${menu}でお取りしています。キャンセルなさいますか？`,
+                    "align": "center",
+                    "wrap": true
+                  }
+                ]
+              },
+              "footer": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                  {
+                    "type": "button",
+                    "style": "link",
+                    "height": "sm",
+                    "action": {
+                      "type": "postback",
+                      "label": "予約をキャンセルする",
+                      "data": `delete&${id}`
+                    }
+                  }
+                ]
+              }
+            }
+          });
       }else{
-        console.log('次回予約なし');
+        return client.replyMessage(ev.replyToken,{
+          "type":"text",
+          "text":"次回予約は入っておりません。"
+        });
       }
     }else{
         return client.replyMessage(ev.replyToken,{
@@ -202,7 +245,7 @@ const checkNextReservation = (ev) => {
             return parseInt(targetUser.starttime) >= nowTime; // さらにそのユーザーの現在(nowTime)より未来にある予約データをfiltering.
           });
           console.log('nextReservationは:',nextReservation);  // nextReservationは配列．
-          /// コンソール表示結果 → nextReservationは：[{id:1, line_uid:'U559cea57076f1f2383db950ef23125ac', name: 'Atom', scheduledate: 2024-04-01T00:00:00.000Z, '1711929600000', endtime: '1711930800000', menu: '0'}]
+          /// コンソール表示結果 → nextReservationは：[{id:1, line_uid:'U559cea57076f1f2383db950ef23125ac', name: 'Atom', scheduledate: 2024-04-01T00:00:00.000Z, starttime: '1711929600000', endtime: '1711930800000', menu: '0'}]
           resolve(nextReservation);
         }else{
           resolve([]);    // checkNextReservation()関数を呼び出す側が配列の戻りを期待してるので、nextReservationが無かった場合カラ配列を戻している。
@@ -309,6 +352,21 @@ const handlePostbackEvent = async (ev) => {
       });
     })
     .catch(e=>console.log(e));
+  }else if(splitData[0] === 'delete'){
+    const id = parseInt(splitData[1]); // handleMessageEvent()の'予約キャンセル'の場合のFlex messageの"data": `delete&${id}`から来てる&でスプリットした二つ目はid値
+     const deleteQuery = {
+       text:'DELETE FROM reservations WHERE id = $1;',
+       values:[`${id}`]
+     };
+     connection.query(deleteQuery)
+       .then(res=>{
+         console.log('予約キャンセル成功');
+         client.replyMessage(ev.replyToken,{
+           "type":"text",
+           "text":"予約をキャンセルしました。"
+         });
+       })
+       .catch(e=>console.log(e));
   }else if(splitData[0] === 'no'){
     // あとで何か入れる
   }
