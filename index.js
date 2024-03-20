@@ -153,7 +153,7 @@ const handleMessageEvent = async (ev) => {
     if(text === '予約する'){
         orderChoice(ev);
     }else if(text === '予約確認'){
-        const nextReservation = await checkNextReservation(ev);
+        const nextReservation = await checkNextReservation(ev); // nextReservationは配列はcheckNextReservation(ev)から配列として返ってくる．
         const startTimestamp = nextReservation[0].starttime;
         const date = dateConversion(startTimestamp);
         const menu = MENU[parseInt(nextReservation[0].menu)];
@@ -161,6 +161,13 @@ const handleMessageEvent = async (ev) => {
           "type":"text",
           "text":`次回予約は${date}、${menu}でお取りしてます\uDBC0\uDC22`
         });
+    }else if(text === '予約キャンセル'){
+      const nextReservation = await checkNextReservation(ev);
+      if(nextReservation.length){
+        console.log('次回予約があります');
+      }else{
+        console.log('次回予約なし');
+      }
     }else{
         return client.replyMessage(ev.replyToken,{
             "type":"text",
@@ -176,20 +183,26 @@ const checkNextReservation = (ev) => {
     const id = ev.source.userId;
     const nowTime = new Date().getTime();
 
+    // $1 は、PostgreSQLのパラメータ化されたクエリ(Parameterized Query)において、プレースホルダーとして使用される記号.
+    // line_uid = $1の$1の部分に、実際の値が代入される．代入される値は、valuesプロパティで指定される．
+    // 実際に実行されるクエリは以下のようになる。
+    // SELECT * FROM reservations WHERE line_uid = 'U559cea57076f1f2383db950ef23125ac' ORDER BY starttime ASC;
+    // ${id}の部分は、${}で囲まれた部分、ここではidという変数の値が埋め込まれてる．[]で囲まれていることから配列である．
+    // valuesプロパティは、クエリ内のプレースホルダーに実際の値を割り当てるためのもの. values: [`${id},${name}`]など複数指定でき、
+    // SELECT文でwhere line_uid = $1 and name = $2など複数のプレースホルダーを使える.
     const selectQuery = {
-      text:'SELECT * FROM reservations;'
+      text:'SELECT * FROM reservations WHERE line_uid = $1 ORDER BY starttime ASC;',
+      values: [`${id}`]
     };
+
     connection.query(selectQuery)
       .then(res=>{
         if(res.rows.length){  // クエリを実行して返ってきた全予約データはres.rowsに格納．
-          const nextReservation = res.rows.filter(resultAll=>{  // 全予約データのうち「予約確認」メッセージを送った人のLINE IDに一致する予約をフィルタリング.
-            return resultAll.line_uid === id;
-          })
-          .filter(resultUser=>{
-            return parseInt(resultUser.starttime) >= nowTime; // さらにそのユーザーの現在(nowTime)より未来にある予約データをfiltering.
+          const nextReservation = res.rows.filter(targetUser=>{
+            return parseInt(targetUser.starttime) >= nowTime; // さらにそのユーザーの現在(nowTime)より未来にある予約データをfiltering.
           });
           console.log('nextReservationは:',nextReservation);  // nextReservationは配列．
-          /// コンソール表示結果：nextReservationは：
+          /// コンソール表示結果 → nextReservationは：[{id:1, line_uid:'U559cea57076f1f2383db950ef23125ac', name: 'Atom', scheduledate: 2024-04-01T00:00:00.000Z, '1711929600000', endtime: '1711930800000', menu: '0'}]
           resolve(nextReservation);
         }else{
           resolve([]);    // checkNextReservation()関数を呼び出す側が配列の戻りを期待してるので、nextReservationが無かった場合カラ配列を戻している。
