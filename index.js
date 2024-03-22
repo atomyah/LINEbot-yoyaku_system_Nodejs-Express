@@ -33,7 +33,7 @@ connection.connect();
 
 // 顧客テーブル（users）作成．id, line_uid, display_name, timestamp
 const create_userTable = {
-    text:'CREATE TABLE IF NOT EXISTS users (id SERIAL NOT NULL, line_uid VARCHAR(255), display_name VARCHAR(255), timestamp VARCHAR(255);'
+    text:'CREATE TABLE IF NOT EXISTS users (id SERIAL NOT NULL, line_uid VARCHAR(255), display_name VARCHAR(255), timestamp VARCHAR(255));'
 };
 connection.query(create_userTable)
    .then(()=>{
