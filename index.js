@@ -5,11 +5,16 @@ const PORT = process.env.PORT || 5000
 const { Client } = require('pg');
 
 
-//// グローバル変数 ////
-const INITIAL_TREAT = [20,10,40,15,30,15,10];  //施術時間初期値
+//// グローバル変数 //// 
+/// ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓　メニューによってかかる時間を可変にしないので不必要に　↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+//const INITIAL_TREAT = [20,10,40,15,30,15,10];  //施術時間初期値
 // 「カット、シャンプー、カラーリンング、ヘッドスパ、ﾏｯｻｰｼﾞ&ﾊﾟｯｸ、眉整え、顔そり」にかかるデフォルトの時間
 
-const MENU = ['カット','シャンプー','カラーリング','ヘッドスパ','マッサージ＆スパ','眉整え','顔そり'];
+// ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓　とはいうもののメニューごとの時間を一応設定　↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+const INITIAL_TREAT = [60,60,90];  //施術時間値
+//「'ボディトークセッション','ホリスティックコンディション','パーソナルビルドアップ'」にかかるデフォルトの時間
+
+const MENU = ['ボディトークセッション','ホリスティックコンディション','パーソナルビルドアップ'];
 
 const WEEK = [ "日", "月", "火", "水", "木", "金", "土" ];
 //// グローバル変数ここまで ////
@@ -26,9 +31,9 @@ const connection = new Client({
 connection.connect();
 
 
-// 顧客テーブル（users）作成．カット、シャンプー、カラーリンング、ヘッドスパの時間は顧客ごとに異なるため顧客データベースの項目に入れ後で変更可能にする．
+// 顧客テーブル（users）作成．id, line_uid, display_name, timestamp
 const create_userTable = {
-    text:'CREATE TABLE IF NOT EXISTS users (id SERIAL NOT NULL, line_uid VARCHAR(255), display_name VARCHAR(255), timestamp VARCHAR(255), cuttime SMALLINT, shampootime SMALLINT, colortime SMALLINT, spatime SMALLINT);'
+    text:'CREATE TABLE IF NOT EXISTS users (id SERIAL NOT NULL, line_uid VARCHAR(255), display_name VARCHAR(255), timestamp VARCHAR(255);'
 };
 connection.query(create_userTable)
    .then(()=>{
@@ -116,9 +121,10 @@ const greeting_follow = async (ev) => {
 
     // CREATE TABLE（顧客データ）テーブルデータ挿入
     const table_insert = {
-        // VALUES($1,$2,$3,$4,$5,$6,$7) は、SQLのプリペアドステートメントで使用されるパラメーター. $1がline_uid, $2がtimestampを表す.SQLインジェクション攻撃を防ぐためだけに必要
-        text:'INSERT INTO users (line_uid,display_name,timestamp,cuttime,shampootime,colortime,spatime) VALUES($1,$2,$3,$4,$5,$6,$7);',
-        values:[ev.source.userId,profile.displayName,ev.timestamp,INITIAL_TREAT[0],INITIAL_TREAT[1],INITIAL_TREAT[2],INITIAL_TREAT[3]]
+        // VALUES($1,$2,$3) は、SQLのプリペアドステートメントで使用されるパラメーター. $1がline_uid, $2がtimestampを表す.SQLインジェクション攻撃を防ぐためだけに必要
+        // cuttime,shampootime,color,spaにかかる可変時間は削除したのでline_uid,display_name,timestampの３つだけ．
+        text:'INSERT INTO users (line_uid,display_name,timestamp) VALUES($1,$2,$3);',
+        values:[ev.source.userId,profile.displayName,ev.timestamp]  // timestampはイベント発生時のミリ秒．ここっではフォローされた時．
       };
       await connection.query(table_insert)
         .then(()=>{
@@ -152,6 +158,7 @@ const handleMessageEvent = async (ev) => {
 
     if(text === '予約する'){
         orderChoice(ev);
+        // orderChoice(ev)からpostbackの値（menu&0,menu&1,menu&2のどれか）を取得し、handlePostbackEvent()へ．
     }else if(text === '予約確認'){
         const nextReservation = await checkNextReservation(ev); // nextReservationは配列はcheckNextReservation(ev)から配列として返ってくる．
         const startTimestamp = nextReservation[0].starttime;
@@ -163,7 +170,8 @@ const handleMessageEvent = async (ev) => {
         });
     }else if(text === '予約キャンセル'){
       const nextReservation = await checkNextReservation(ev);
-      // nextReservationの中身：[{id:1, line_uid:'U559cea57076f1f2383db950ef23125ac', name: 'Atom', scheduledate: 2024-04-01T00:00:00.000Z, starttime: '1711929600000', endtime: '1711930800000', menu: '0'}]
+      // nextReservationの中身：[{id:1, line_uid:'U559cea57076f1f2383db950ef23125ac', name:'Atom', scheduledate:2024-04-01T00:00:00.000Z, starttime:'1711929600000', endtime:'1711930800000', menu:'0'}]
+      // 47行目参考↑
       if(nextReservation.length){
           const startTimestamp = parseInt(nextReservation[0].starttime);
           const menu = MENU[parseInt(nextReservation[0].menu)];
@@ -234,15 +242,15 @@ const checkNextReservation = (ev) => {
     // valuesプロパティは、クエリ内のプレースホルダーに実際の値を割り当てるためのもの. values: [`${id},${name}`]など複数指定でき、
     // SELECT文でwhere line_uid = $1 and name = $2など複数のプレースホルダーを使える.
     const selectQuery = {
-      text:'SELECT * FROM reservations WHERE line_uid = $1 ORDER BY starttime ASC;',
+      text:'SELECT * FROM reservations WHERE line_uid = $1 ORDER BY starttime ASC;', // const id = ev.source.userId;で取得したidとreservationsテーブルのline_uidが一致するものを全件取得．
       values: [`${id}`]
     };
 
     connection.query(selectQuery)
       .then(res=>{
-        if(res.rows.length){  // クエリを実行して返ってきた全予約データはres.rowsに格納．
+        if(res.rows.length){  // クエリを実行して返ってきた予約データはres.rowsに格納．
           const nextReservation = res.rows.filter(targetUser=>{
-            return parseInt(targetUser.starttime) >= nowTime; // さらにそのユーザーの現在(nowTime)より未来にある予約データをfiltering.
+            return parseInt(targetUser.starttime) >= nowTime; // さらにそのユーザーの、現在(nowTime)より未来にある予約データをfilteringで抽出.
           });
           console.log('nextReservationは:',nextReservation);  // nextReservationは配列．
           /// コンソール表示結果 → nextReservationは：[{id:1, line_uid:'U559cea57076f1f2383db950ef23125ac', name: 'Atom', scheduledate: 2024-04-01T00:00:00.000Z, starttime: '1711929600000', endtime: '1711930800000', menu: '0'}]
@@ -318,28 +326,28 @@ const handlePostbackEvent = async (ev) => {
   // 4は希望メニューの「ﾏｯｻｰｼﾞ&ﾊﾟｯｸ」のこと、3は予約時間帯１２時台を表す．
   
   if(splitData[0] === 'menu'){
-      const orderedMenu = splitData[1];
+      const orderedMenu = splitData[1]; // splitData[1]には,0,1,2のいずれかの文字列が入ってる．
       askDate(ev,orderedMenu);
-  }else if(splitData[0] === 'date'){
+  }else if(splitData[0] === 'date'){ // askDate()がpostbackデータ'date&${orderedMenu}'を返してくる．それを元に...
       const orderedMenu = splitData[1];
-      const selectedDate = ev.postback.params.date;
-      askTime(ev, orderedMenu, selectedDate);
-  }else if(splitData[0] === 'time'){
-      const orderedMenu = splitData[1]; // 4
+      const selectedDate = ev.postback.params.date; // ev.postback.params.dateには '2020-09-30' などといった文字列が入ってる．
+      askTime(ev, orderedMenu, selectedDate); // askTime(ev, 0, '2020-09-30')等とaskTime()を実行する．
+  }else if(splitData[0] === 'time'){ //askTime()がpostbackデータ`time&${orderedMenu}&${selectedDate}&0`を返してくる．それを元に...
+      const orderedMenu = splitData[1]; // 0
       const selectedDate = splitData[2]; // 2020-09-30
-      const selectedTime = splitData[3]; // 3
-      confirmation(ev,orderedMenu,selectedDate,selectedTime);
-  }else if(splitData[0] === 'yes'){
-    const orderedMenu = splitData[1];
-    const selectedDate = splitData[2];
-    const selectedTime = splitData[3];
-    const startTimestamp = timeConversion(selectedDate,selectedTime);
+      const selectedTime = splitData[3]; // 3 -> 0~10まである. 0が９時の枠で10が１９時の枠を表す．
+      confirmation(ev,orderedMenu,selectedDate,selectedTime); // confirmation(ev, 0, '2020-09-30', 0)等となる．
+  }else if(splitData[0] === 'yes'){   // confirmation()からpostbackデータ`yes&${menu}&${date}&${time}`が返ってくる．例えば`yes&0&2020-09-30&0`のような形．
+    const orderedMenu = splitData[1]; // 0 (ボディトークセッション)
+    const selectedDate = splitData[2];  // 2020-09-30
+    const selectedTime = splitData[3];  // 0 （９時枠）
+    const startTimestamp = timeConversion(selectedDate,selectedTime); // timeConversion('2020-09-30', 0) 1970-01-01からのミリ秒で施術開始時間を取得．
     console.log('その1');
-    const treatTime = await calcTreatTime(ev.source.userId,orderedMenu);
-    const endTimestamp = startTimestamp + treatTime*60*1000;  // calcTreatTime関数から帰ってきたtreatTimeは分単位なのでミリ秒に変換.
+    const treatTime = await calcTreatTime(ev.source.userId,orderedMenu); // calcTreatTime('U559cea57076f1f2383db950ef23125ac', 0)とか
+    const endTimestamp = startTimestamp + treatTime*60*1000;  // calcTreatTime関数から返ってきたtreatTime(400行目resolve(treatTime)で返ってくる)は分単位なのでミリ秒に変換.
     console.log('その4');
     console.log('endTime:',endTimestamp);
-    const insertQuery = {
+    const insertQuery = { // reservationテーブル：(id SERIAL NOT NULL, line_uid VARCHAR(255), name VARCHAR(100), scheduledate DATE, starttime BIGINT, endtime BIGINT, menu VARCHAR(50))
       text:'INSERT INTO reservations (line_uid, name, scheduledate, starttime, endtime, menu) VALUES($1,$2,$3,$4,$5,$6);',
       values:[ev.source.userId,profile.displayName,selectedDate,startTimestamp,endTimestamp,orderedMenu]
     };
@@ -352,7 +360,7 @@ const handlePostbackEvent = async (ev) => {
       });
     })
     .catch(e=>console.log(e));
-  }else if(splitData[0] === 'delete'){
+  }else if(splitData[0] === 'delete'){ // handleMessageEvent()のif(text="予約キャンセル"){checkNextReservation(ev)}からのpostbackデータから来ている. `delete&${id}`
     const id = parseInt(splitData[1]); // handleMessageEvent()の'予約キャンセル'の場合のFlex messageの"data": `delete&${id}`から来てる&でスプリットした二つ目はid値
      const deleteQuery = {
        text:'DELETE FROM reservations WHERE id = $1;',
@@ -372,38 +380,24 @@ const handlePostbackEvent = async (ev) => {
   }
 }
 
-/// 施術開始時間を1970年1/1 0時からのミリ秒で取得する
+/// 施術開始時間を1970年1/1 0時からのミリ秒で取得する.
+// timeConversion('2020-09-30', 0)
 const timeConversion = (date,time) => {
   const selectedTime = 9 + parseInt(time) - 9;  // 開店9時なので9をプラス、new Date( )で勝手に日本標準時間の+9時間分のミリ秒が足されてしまうため、-9としている．
   return new Date(`${date} ${selectedTime}:00`).getTime();
 }
 
-/// userIdと選んだメニューから該当するユーザー情報を取り出し（line_uid = $1）、ユーザが存在すれば（if(res.rows.length)）
-/// そのカット、シャンプー、カラー、スパ、INITIAL_TREAT[4]～[6]（ﾏｯｻｰｼﾞ&ﾊﾟｯｸ、眉整え、顔そり）の各施術時間をtreatArray配列
-/// に格納．メニュー番号は文字列を通知型にし（parseInt(menu)）、treatArray[]のインデックスとして使用できるようにする．
-/// 選んだメニューはひとつだけなので、それにかかる時間（treatArray[menuNumber]）をtreatTimeに格納し返す（分単位）．
+// calcTreatTime('U559cea57076f1f2383db950ef23125ac', 0)とかの形で実行される．
+// const INITIAL_TREAT = [60,60,90]; 施術時間値.前からボディトーク60分、ホリスティック60分、マンツーフィット90分．
+// menuには0,1,2のどれかが入っている．
 const calcTreatTime = (id,menu) => {
-  return new Promise((resolve,reject)=>{
+  return new Promise((resolve, reject)=>{
     console.log('その2');
-    const selectQuery = {
-      text: 'SELECT * FROM users WHERE line_uid = $1;',
-      values: [`${id}`]
-    };
-    connection.query(selectQuery)
-    .then(res=>{
-      console.log('その3');
-      if(res.rows.length){
-        const info = res.rows[0];
-        const treatArray = [info.cuttime,info.shampootime,info.colortime,info.spatime,INITIAL_TREAT[4],INITIAL_TREAT[5],INITIAL_TREAT[6]];
-        const menuNumber = parseInt(menu);
-        const treatTime = treatArray[menuNumber];
-        resolve(treatTime);
-      }else{
-        console.log('LINE IDに一致するユーザーが見つかりません。');
-        return;
-      }
-    })
-    .catch(e=>console.log(e));
+    const menuNumber = parseInt(menu); // 0,1,2は文字列なのでparseIntで数値に．
+    const treatTime = INITIAL_TREAT[menuNumber] // const INITIAL_TREAT = [60,60,90]からmenuNumberをインデックスとしてmenuごとの施術時間を取り出す（分単位）
+    
+    console.log('その3');
+    resolve(treatTime);
   });
  }
 
@@ -416,177 +410,133 @@ const orderChoice = (ev) => {
       "altText":"menuSelect",
       "contents":
       {
-          "type": "bubble",
-          "header": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-              {
-                "type": "text",
-                "text": "メニューを選択して下さい",
-                "align": "center",
-                "size": "lg"
-              }
-            ]
-          },
-          "hero": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-              {
-                "type": "text",
-                "text": "(１つのみ選択可能です)",
-                "size": "md",
-                "align": "center"
-              },
-              {
-                "type": "separator"
-              }
-            ]
-          },
-          "body": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-              {
-                "type": "box",
-                "layout": "horizontal",
-                "contents": [
-                  {
-                    "type": "button",
-                    "action": {
-                      "type": "postback",
-                      "label": "カット",
-                      "data": "menu&0"
-                    },
-                    "style": "primary",
-                    "color": "#999999",
-                    "margin": "md"
+        "type": "bubble",
+        "header": {
+          "type": "box",
+          "layout": "vertical",
+          "contents": [
+            {
+              "type": "text",
+              "text": "メニューを選択して下さい",
+              "align": "center",
+              "size": "lg"
+            }
+          ]
+        },
+        "hero": {
+          "type": "box",
+          "layout": "vertical",
+          "contents": [
+            {
+              "type": "text",
+              "text": "(１つのみ選択可能です)",
+              "size": "md",
+              "align": "center"
+            },
+            {
+              "type": "separator"
+            }
+          ]
+        },
+        "body": {
+          "type": "box",
+          "layout": "vertical",
+          "contents": [
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "contents": [
+                {
+                  "type": "button",
+                  "action": {
+                    "type": "postback",
+                    "label": "ボディトークセッション",
+                    "data": "menu&0"
                   },
-                  {
-                    "type": "button",
-                    "action": {
-                      "type": "postback",
-                      "label": "シャンプー",
-                      "data": "menu&1"
-                    },
-                    "style": "primary",
-                    "color": "#999999",
-                    "margin": "md"
-                  }
-                ]
-              },
-              {
-                "type": "box",
-                "layout": "horizontal",
-                "contents": [
-                  {
-                    "type": "button",
-                    "action": {
-                      "type": "postback",
-                      "label": "ｶﾗｰﾘﾝｸﾞ",
-                      "data": "menu&2"
-                    },
-                    "margin": "md",
-                    "style": "primary",
-                    "color": "#999999"
-                  },
-                  {
-                    "type": "button",
-                    "action": {
-                      "type": "postback",
-                      "label": "ヘッドスパ",
-                      "data": "menu&3"
-                    },
-                    "margin": "md",
-                    "style": "primary",
-                    "color": "#999999"
-                  }
-                ],
-                "margin": "md"
-              },
-              {
-                "type": "box",
-                "layout": "horizontal",
-                "contents": [
-                  {
-                    "type": "button",
-                    "action": {
-                      "type": "postback",
-                      "label": "ﾏｯｻｰｼﾞ&ﾊﾟｯｸ",
-                      "data": "menu&4"
-                    },
-                    "margin": "md",
-                    "style": "primary",
-                    "color": "#999999"
-                  },
-                  {
-                    "type": "button",
-                    "action": {
-                      "type": "postback",
-                      "label": "顔そり",
-                      "data": "menu&5"
-                    },
-                    "style": "primary",
-                    "color": "#999999",
-                    "margin": "md"
-                  }
-                ],
-                "margin": "md"
-              },
-              {
-                "type": "box",
-                "layout": "horizontal",
-                "contents": [
-                  {
-                    "type": "button",
-                    "action": {
-                      "type": "postback",
-                      "label": "眉整え",
-                      "data": "menu&6"
-                    },
-                    "margin": "md",
-                    "style": "primary",
-                    "color": "#999999"
-                  },
-                  {
-                    "type": "button",
-                    "action": {
-                      "type": "postback",
-                      "label": "選択終了",
-                      "data": "end"
-                    },
-                    "margin": "md",
-                    "style": "primary",
-                    "color": "#0000ff"
-                  }
-                ],
-                "margin": "md"
-              },
-              {
-                "type": "separator"
-              }
-            ]
-          },
-          "footer": {
-            "type": "box",
-            "layout": "vertical",
-            "contents": [
-              {
-                "type": "button",
-                "action": {
-                  "type": "postback",
-                  "label": "キャンセル",
-                  "data": "cancel"
+                  "style": "primary",
+                  "color": "#999999",
+                  "margin": "sm"
                 }
+              ]
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "contents": [
+                {
+                  "type": "button",
+                  "action": {
+                    "type": "postback",
+                    "label": "ホリスティックコンディション",
+                    "data": "menu&1"
+                  },
+                  "margin": "sm",
+                  "style": "primary",
+                  "color": "#999999"
+                }
+              ],
+              "margin": "md"
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "contents": [
+                {
+                  "type": "button",
+                  "action": {
+                    "type": "postback",
+                    "label": "パーソナルフィッティング",
+                    "data": "menu&2"
+                  },
+                  "margin": "sm",
+                  "style": "primary",
+                  "color": "#999999"
+                }
+              ],
+              "margin": "md"
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "contents": [
+                {
+                  "type": "button",
+                  "action": {
+                    "type": "postback",
+                    "label": "選択終了",
+                    "data": "end"
+                  },
+                  "margin": "sm",
+                  "style": "primary",
+                  "color": "#0000ff"
+                }
+              ],
+              "margin": "md"
+            },
+            {
+              "type": "separator"
+            }
+          ]
+        },
+        "footer": {
+          "type": "box",
+          "layout": "vertical",
+          "contents": [
+            {
+              "type": "button",
+              "action": {
+                "type": "postback",
+                "label": "キャンセル",
+                "data": "cancel"
               }
-            ]
-          }
+            }
+          ]
         }
+      }
   });
 }
 
-// LINE Flex Message（予約希望日を聞く）を表示するaskDate関数
+// LINE Flex Message（予約希望日を聞く）を表示するaskDate関数. askDate(ev,orderedMenu)のorderedMenuには1,2,3のいずれかの文字列が入ってる．
 const askDate = (ev,orderedMenu) => {
   return client.replyMessage(ev.replyToken,{
       "type":"flex",
@@ -624,7 +574,7 @@ const askDate = (ev,orderedMenu) => {
   });
 }
 
-// LINE Flex Message（予約希望時間を聞く）を表示するaskTime関数
+// LINE Flex Message（予約希望時間を聞く）を表示するaskTime関数．askTime(ev, 0, '2020-09-30')のような形で呼ばれる．
 const askTime = (ev,orderedMenu,selectedDate) => {
   return client.replyMessage(ev.replyToken,{
       "type":"flex",
@@ -818,10 +768,10 @@ const askTime = (ev,orderedMenu,selectedDate) => {
 
 
 // LINE Flex Message（確認（はい、いいえ））を表示するconfirmation関数
-// handlePostbackEvent()関数の中のconfirmation(ev,orderedMenu,selectedDate,selectedTime);
+// handlePostbackEvent()関数の中のconfirmation(ev,orderedMenu,selectedDate,selectedTime) → confirmation(ev, 0, '2020-09-30', 0)のような形．
 const confirmation = (ev,menu,date,time) => {
-  const splitDate = date.split('-');
-  const selectedTime = 9 + parseInt(time); // timeは文字列なのでparseIntで数値型に．0->9に9時->19時を割り当ててるので（例：3は１２時）9を足している．
+  const splitDate = date.split('-'); // '2020-09-30'を2020と09と30に分けてsplitDate配列に格納．
+  const selectedTime = 9 + parseInt(time); // timeは文字列なのでparseIntで数値型に．0->9に9時->19時を割り当ててるので（例：3は１２時枠）9を足している．
   
   return client.replyMessage(ev.replyToken,{
     "type":"flex",
