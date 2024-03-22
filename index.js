@@ -37,7 +37,7 @@ const create_userTable = {
 };
 connection.query(create_userTable)
    .then(()=>{
-       console.log('table users created successfully!!');
+       console.log('usersテーブルが作成されました!!');
    })
    .catch(e=>console.log(e));
 
@@ -48,7 +48,7 @@ text:'CREATE TABLE IF NOT EXISTS reservations (id SERIAL NOT NULL, line_uid VARC
 };
 connection.query(create_reservationTable)
 .then(()=>{
-    console.log('table users created successfully!!');
+    console.log('reservationsテーブルが作成されました!!');
 })
 .catch(e=>console.log(e));
 
@@ -124,7 +124,7 @@ const greeting_follow = async (ev) => {
         // VALUES($1,$2,$3) は、SQLのプリペアドステートメントで使用されるパラメーター. $1がline_uid, $2がtimestampを表す.SQLインジェクション攻撃を防ぐためだけに必要
         // cuttime,shampootime,color,spaにかかる可変時間は削除したのでline_uid,display_name,timestampの３つだけ．
         text:'INSERT INTO users (line_uid,display_name,timestamp) VALUES($1,$2,$3);',
-        values:[ev.source.userId,profile.displayName,ev.timestamp]  // timestampはイベント発生時のミリ秒．ここっではフォローされた時．
+        values:[ev.source.userId,profile.displayName,ev.timestamp]  // timestampはイベント発生時のミリ秒．ここではフォローされた時．
       };
       await connection.query(table_insert)
         .then(()=>{
