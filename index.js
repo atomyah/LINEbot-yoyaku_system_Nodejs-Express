@@ -208,6 +208,16 @@ const handleMessageEvent = async (ev) => {
                       "label": "予約をキャンセルする",
                       "data": `delete&${id}`
                     }
+                  },
+                  {
+                    "type": "button",
+                    "action": {
+                      "type": "postback",
+                      "label": "キャンセルを取りやめる",
+                      "data": "stopcancel"
+                    },
+                    "height": "sm",
+                    "style": "link"
                   }
                 ]
               }
@@ -380,6 +390,12 @@ const handlePostbackEvent = async (ev) => {
     return client.replyMessage(ev.replyToken,{
       "type":"text",
       "text":"予約受付を中断します。またのご連絡をお待ちしております。"
+    });
+    // handleMessageEvent()の'予約キャンセル'の「キャンセルを取りやめる」をクリックした時のPostbackデータがstopcancel
+  }else if(splitData[0] === 'stopcancel'){
+    return client.replyMessage(ev.replyToken,{
+      "type":"text",
+      "text":"予約キャンセルを中断しました。"
     });
   }
 }
