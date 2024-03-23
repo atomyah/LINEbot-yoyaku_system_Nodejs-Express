@@ -335,68 +335,78 @@ const handlePostbackEvent = async (ev) => {
   //splitData配列例：[ 'time', '4', '2020-09-30', '3' ] timeは希望時間帯のpostbackだよ、という意味．
   // 4は希望メニューの「ﾏｯｻｰｼﾞ&ﾊﾟｯｸ」のこと、3は予約時間帯１２時台を表す．
   
-  if(splitData[0] === 'menu'){
-      const orderedMenu = splitData[1]; // splitData[1]には,0,1,2のいずれかの文字列が入ってる．
-      askDate(ev,orderedMenu);
-  }else if(splitData[0] === 'date'){ // askDate()がpostbackデータ'date&${orderedMenu}'を返してくる．それを元に...
-      const orderedMenu = splitData[1];
-      const selectedDate = ev.postback.params.date; // ev.postback.params.dateには '2020-09-30' などといった文字列が入ってる．
-      askTime(ev, orderedMenu, selectedDate); // askTime(ev, 0, '2020-09-30')等とaskTime()を実行する．
-  }else if(splitData[0] === 'time'){ //askTime()がpostbackデータ`time&${orderedMenu}&${selectedDate}&0`を返してくる．それを元に...
-      const orderedMenu = splitData[1]; // 0
-      const selectedDate = splitData[2]; // 2020-09-30
-      const selectedTime = splitData[3]; // 3 -> 0~10まである. 0が９時の枠で10が１９時の枠を表す．
-      confirmation(ev,orderedMenu,selectedDate,selectedTime); // confirmation(ev, 0, '2020-09-30', 0)等となる．
-  }else if(splitData[0] === 'yes'){   // confirmation()からpostbackデータ`yes&${menu}&${date}&${time}`が返ってくる．例えば`yes&0&2020-09-30&0`のような形．
-    const orderedMenu = splitData[1]; // 0 (ボディトークセッション)
-    const selectedDate = splitData[2];  // 2020-09-30
-    const selectedTime = splitData[3];  // 0 （９時枠）
-    const startTimestamp = timeConversion(selectedDate,selectedTime); // timeConversion('2020-09-30', 0) 1970-01-01からのミリ秒で施術開始時間を取得．
-    console.log('その1');
-    const treatTime = await calcTreatTime(ev.source.userId,orderedMenu); // calcTreatTime('U559cea57076f1f2383db950ef23125ac', 0)とか
-    const endTimestamp = startTimestamp + treatTime*60*1000;  // calcTreatTime関数から返ってきたtreatTime(400行目resolve(treatTime)で返ってくる)は分単位なのでミリ秒に変換.
-    console.log('その4');
-    console.log('endTime:',endTimestamp);
-    const insertQuery = { // reservationテーブル：(id SERIAL NOT NULL, line_uid VARCHAR(255), name VARCHAR(100), scheduledate DATE, starttime BIGINT, endtime BIGINT, menu VARCHAR(50))
-      text:'INSERT INTO reservations (line_uid, name, scheduledate, starttime, endtime, menu) VALUES($1,$2,$3,$4,$5,$6);',
-      values:[ev.source.userId,profile.displayName,selectedDate,startTimestamp,endTimestamp,orderedMenu]
-    };
-    connection.query(insertQuery)
-    .then(res=>{
-      console.log('データ格納成功！');
-      client.replyMessage(ev.replyToken,{
-        "type":"text",
-        "text":"予約が完了しました。"
-      });
-    })
-    .catch(e=>console.log(e));
-  }else if(splitData[0] === 'delete'){ // handleMessageEvent()のif(text="予約キャンセル"){checkNextReservation(ev)}からのpostbackデータから来ている. `delete&${id}`
-    const id = parseInt(splitData[1]); // handleMessageEvent()の'予約キャンセル'の場合のFlex messageの"data": `delete&${id}`から来てる&でスプリットした二つ目はid値
-     const deleteQuery = {
-       text:'DELETE FROM reservations WHERE id = $1;',
-       values:[`${id}`]
-     };
-     connection.query(deleteQuery)
-       .then(res=>{
-         console.log('予約キャンセル成功');
-         client.replyMessage(ev.replyToken,{
-           "type":"text",
-           "text":"予約をキャンセルしました。"
-         });
-       })
-       .catch(e=>console.log(e));
-  }else if(splitData[0] === 'cancel' || splitData[0] === 'no'|| splitData[0] === 'end'){
-    // orderChoice()で「選択終了」ボタンのPostbackデータがcancel, confirmation()の「いいえ」のPostbackデータがno, askTimeの「中止」ボタンがend
-    return client.replyMessage(ev.replyToken,{
-      "type":"text",
-      "text":"予約受付を中断します。またのご連絡をお待ちしております。"
+  const nextReservation = await checkNextReservation(ev);
+
+  if (nextReservation.length) {
+    // ユーザーが既に予約を持っている場合の処理
+    return client.replyMessage(ev.replyToken, {
+      type: "text",
+      text: "すでに予約が入っています。変更したい場合は今の予約を一旦「キャンセル」頂き、あらためて新規に予約して下さい。"
     });
-    // handleMessageEvent()の'予約キャンセル'の「キャンセルを取りやめる」をクリックした時のPostbackデータがstopcancel
-  }else if(splitData[0] === 'stopcancel'){
-    return client.replyMessage(ev.replyToken,{
-      "type":"text",
-      "text":"予約キャンセルを中断しました。"
-    });
+  } else {
+      if(splitData[0] === 'menu'){
+          const orderedMenu = splitData[1]; // splitData[1]には,0,1,2のいずれかの文字列が入ってる．
+          askDate(ev,orderedMenu);
+      }else if(splitData[0] === 'date'){ // askDate()がpostbackデータ'date&${orderedMenu}'を返してくる．それを元に...
+          const orderedMenu = splitData[1];
+          const selectedDate = ev.postback.params.date; // ev.postback.params.dateには '2020-09-30' などといった文字列が入ってる．
+          askTime(ev, orderedMenu, selectedDate); // askTime(ev, 0, '2020-09-30')等とaskTime()を実行する．
+      }else if(splitData[0] === 'time'){ //askTime()がpostbackデータ`time&${orderedMenu}&${selectedDate}&0`を返してくる．それを元に...
+          const orderedMenu = splitData[1]; // 0
+          const selectedDate = splitData[2]; // 2020-09-30
+          const selectedTime = splitData[3]; // 3 -> 0~10まである. 0が９時の枠で10が１９時の枠を表す．
+          confirmation(ev,orderedMenu,selectedDate,selectedTime); // confirmation(ev, 0, '2020-09-30', 0)等となる．
+      }else if(splitData[0] === 'yes'){   // confirmation()からpostbackデータ`yes&${menu}&${date}&${time}`が返ってくる．例えば`yes&0&2020-09-30&0`のような形．
+        const orderedMenu = splitData[1]; // 0 (ボディトークセッション)
+        const selectedDate = splitData[2];  // 2020-09-30
+        const selectedTime = splitData[3];  // 0 （９時枠）
+        const startTimestamp = timeConversion(selectedDate,selectedTime); // timeConversion('2020-09-30', 0) 1970-01-01からのミリ秒で施術開始時間を取得．
+        console.log('その1');
+        const treatTime = await calcTreatTime(ev.source.userId,orderedMenu); // calcTreatTime('U559cea57076f1f2383db950ef23125ac', 0)とか
+        const endTimestamp = startTimestamp + treatTime*60*1000;  // calcTreatTime関数から返ってきたtreatTime(400行目resolve(treatTime)で返ってくる)は分単位なのでミリ秒に変換.
+        console.log('その4');
+        console.log('endTime:',endTimestamp);
+        const insertQuery = { // reservationテーブル：(id SERIAL NOT NULL, line_uid VARCHAR(255), name VARCHAR(100), scheduledate DATE, starttime BIGINT, endtime BIGINT, menu VARCHAR(50))
+          text:'INSERT INTO reservations (line_uid, name, scheduledate, starttime, endtime, menu) VALUES($1,$2,$3,$4,$5,$6);',
+          values:[ev.source.userId,profile.displayName,selectedDate,startTimestamp,endTimestamp,orderedMenu]
+        };
+        connection.query(insertQuery)
+        .then(res=>{
+          console.log('データ格納成功！');
+          client.replyMessage(ev.replyToken,{
+            "type":"text",
+            "text":"予約が完了しました。"
+          });
+        })
+        .catch(e=>console.log(e));
+      }else if(splitData[0] === 'delete'){ // handleMessageEvent()のif(text="予約キャンセル"){checkNextReservation(ev)}からのpostbackデータから来ている. `delete&${id}`
+        const id = parseInt(splitData[1]); // handleMessageEvent()の'予約キャンセル'の場合のFlex messageの"data": `delete&${id}`から来てる&でスプリットした二つ目はid値
+        const deleteQuery = {
+          text:'DELETE FROM reservations WHERE id = $1;',
+          values:[`${id}`]
+        };
+        connection.query(deleteQuery)
+          .then(res=>{
+            console.log('予約キャンセル成功');
+            client.replyMessage(ev.replyToken,{
+              "type":"text",
+              "text":"予約をキャンセルしました。"
+            });
+          })
+          .catch(e=>console.log(e));
+      }else if(splitData[0] === 'cancel' || splitData[0] === 'no'|| splitData[0] === 'end'){
+        // orderChoice()で「選択終了」ボタンのPostbackデータがcancel, confirmation()の「いいえ」のPostbackデータがno, askTimeの「中止」ボタンがend
+        return client.replyMessage(ev.replyToken,{
+          "type":"text",
+          "text":"予約受付を中断します。またのご連絡をお待ちしております。"
+        });
+        // handleMessageEvent()の'予約キャンセル'の「キャンセルを取りやめる」をクリックした時のPostbackデータがstopcancel
+      }else if(splitData[0] === 'stopcancel'){
+        return client.replyMessage(ev.replyToken,{
+          "type":"text",
+          "text":"予約キャンセルを中断しました。"
+        });
+      }
   }
 }
 
