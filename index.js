@@ -401,7 +401,7 @@ const handlePostbackEvent = async (ev) => {
           "text":"予約受付を中断します。またのご連絡をお待ちしております。"
         });
         // handleMessageEvent()の'予約キャンセル'の「キャンセルを取りやめる」をクリックした時のPostbackデータがstopcancel
-      }else if(splitData[0] === 'stopcancel'){
+      }else if(splitData[1] === 'stopcancel'){
         return client.replyMessage(ev.replyToken,{
           "type":"text",
           "text":"予約キャンセルを中断しました。"
