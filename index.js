@@ -378,7 +378,7 @@ const handlePostbackEvent = async (ev) => {
   }else if(splitData[0] === 'cancel' || splitData[0] === 'no'){ // orderChoice()で「選択終了」ボタンのPostbackデータがcancel, confirmation()の「いいえ」のPostbackデータがno
     return client.replyMessage(ev.replyToken,{
       "type":"text",
-      "text":"予約受付を中断します。またのご連絡をお待ちしております（「予約する」ボタンから始めてください）"
+      "text":"予約受付を中断します。またのご連絡をお待ちしております。"
     });
   }
 }
@@ -457,7 +457,7 @@ const orderChoice = (ev) => {
                     "data": "menu&0"
                   },
                   "style": "primary",
-                  "color": "#999999",
+                  "color": "#0000ff",
                   "margin": "sm"
                 }
               ]
@@ -475,7 +475,7 @@ const orderChoice = (ev) => {
                   },
                   "margin": "sm",
                   "style": "primary",
-                  "color": "#999999"
+                  "color": "#0000ff"
                 }
               ],
               "margin": "md"
@@ -490,24 +490,6 @@ const orderChoice = (ev) => {
                     "type": "postback",
                     "label": "パーソナルフィッティング",
                     "data": "menu&2"
-                  },
-                  "margin": "sm",
-                  "style": "primary",
-                  "color": "#999999"
-                }
-              ],
-              "margin": "md"
-            },
-            {
-              "type": "box",
-              "layout": "horizontal",
-              "contents": [
-                {
-                  "type": "button",
-                  "action": {
-                    "type": "postback",
-                    "label": "選択終了",
-                    "data": "end"
                   },
                   "margin": "sm",
                   "style": "primary",
