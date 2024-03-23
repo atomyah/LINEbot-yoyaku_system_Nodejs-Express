@@ -592,6 +592,32 @@ const askDate = (ev,orderedMenu) => {
   });
 }
 
+//////////////////
+/// getReservedTimes関数.指定された日付における予約済みの時間帯を取得するための関数. askTimeの中で使う（getReservedTimes(selectedDate)のように）
+const getReservedTimes = async (selectedDate) => {
+  const selectQuery = {
+      text: 'SELECT starttime FROM reservations WHERE scheduledate = $1;',
+      values: [selectedDate],
+  };
+
+  try {
+      const res = await connection.query(selectQuery);
+      const reservedTimes = [];
+
+      res.rows.forEach((reservation) => {
+          const startTime = parseInt(reservation.starttime);
+          const timeSlot = Math.floor((startTime % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+          reservedTimes.push(timeSlot);
+      });
+
+      return reservedTimes;
+  } catch (error) {
+      console.error('Error fetching reserved times:', error);
+      return [];
+  }
+};
+
+
 // LINE Flex Message（予約希望時間を聞く）を表示するaskTime関数．askTime(ev, 0, '2020-09-30')のような形で呼ばれる．
 const askTime = (ev,orderedMenu,selectedDate) => {
   return client.replyMessage(ev.replyToken,{
@@ -786,7 +812,8 @@ const askTime = (ev,orderedMenu,selectedDate) => {
 
 
 // LINE Flex Message（確認（はい、いいえ））を表示するconfirmation関数
-// handlePostbackEvent()関数の中のconfirmation(ev,orderedMenu,selectedDate,selectedTime) → confirmation(ev, 0, '2020-09-30', 0)のような形．
+// handlePostbackEvent()関数の中で使う↓
+// confirmation(ev,orderedMenu,selectedDate,selectedTime) → confirmation(ev, 0, '2020-09-30', 0)のような形．
 const confirmation = (ev,menu,date,time) => {
   const splitDate = date.split('-'); // '2020-09-30'を2020と09と30に分けてsplitDate配列に格納．
   const selectedTime = 9 + parseInt(time); // timeは文字列なのでparseIntで数値型に．0->9に9時->19時を割り当ててるので（例：3は１２時枠）9を足している．
