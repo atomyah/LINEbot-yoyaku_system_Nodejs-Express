@@ -550,10 +550,6 @@ const orderChoice = (ev) => {
 
 // LINE Flex Message（予約希望日を聞く）を表示するaskDate関数. askDate(ev,orderedMenu)のorderedMenuには1,2,3のいずれかの文字列が入ってる．
 const askDate = (ev,orderedMenu) => {
-  const now = new Date();
-  const minDateTime = now.toISOString().slice(0, 10); // 現在日時を"YYYY-MM-DD"の形式で取得
-  /// 585行目、"min":`${minDateTime}`で過去の日時には予約できなくする．
-
   return client.replyMessage(ev.replyToken,{
       "type":"flex",
       "altText":"予約日選択",
@@ -581,8 +577,7 @@ const askDate = (ev,orderedMenu) => {
                 "type": "datetimepicker",
                 "label": "希望日を選択する",
                 "data": `date&${orderedMenu}`,
-                "mode": "date",
-                "min": `${minDateTime}`
+                "mode": "date"
               }
             }
           ]
