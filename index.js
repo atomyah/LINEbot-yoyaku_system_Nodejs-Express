@@ -337,7 +337,7 @@ const handlePostbackEvent = async (ev) => {
   
   // 予約をすでに入れているかの確認．ただし「予約キャンセル」フェーズの場合は382行目の処理へ飛ばさなければならない．
   const nextReservation = await checkNextReservation(ev);
-  if (nextReservation.length && splitData[0] !== 'delete') {
+  if (nextReservation.length && (splitData[0] !== 'delete' || splitData[0] !== 'stopcancel')) {
     // ユーザーが既に予約を持っている場合の処理
     return client.replyMessage(ev.replyToken, {
       type: "text",
