@@ -375,7 +375,8 @@ const handlePostbackEvent = async (ev) => {
          });
        })
        .catch(e=>console.log(e));
-  }else if(splitData[0] === 'cancel' || splitData[0] === 'no'){ // orderChoice()で「選択終了」ボタンのPostbackデータがcancel, confirmation()の「いいえ」のPostbackデータがno
+  }else if(splitData[0] === 'cancel' || splitData[0] === 'no'|| splitData[0] === 'end'){
+    // orderChoice()で「選択終了」ボタンのPostbackデータがcancel, confirmation()の「いいえ」のPostbackデータがno, askTimeの「中止」ボタンがend
     return client.replyMessage(ev.replyToken,{
       "type":"text",
       "text":"予約受付を中断します。またのご連絡をお待ちしております。"
@@ -735,11 +736,11 @@ const askTime = (ev,orderedMenu,selectedDate) => {
                     "type": "button",
                     "action": {
                       "type": "postback",
-                      "label": "終了",
+                      "label": "中止",
                       "data": "end"
                     },
                     "style": "primary",
-                    "color": "#0000ff",
+                    "color": "#999999",
                     "margin": "md"
                   }
                 ],
