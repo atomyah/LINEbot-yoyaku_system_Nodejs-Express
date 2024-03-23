@@ -582,7 +582,7 @@ const askDate = (ev,orderedMenu) => {
                 "label": "希望日を選択する",
                 "data": `date&${orderedMenu}`,
                 "mode": "date",
-                "min": `${minDateTime}`
+                "min": minDateTime
               }
             }
           ]
