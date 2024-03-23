@@ -335,9 +335,9 @@ const handlePostbackEvent = async (ev) => {
   //splitData配列例：[ 'time', '4', '2020-09-30', '3' ] timeは希望時間帯のpostbackだよ、という意味．
   // 4は希望メニューの「ﾏｯｻｰｼﾞ&ﾊﾟｯｸ」のこと、3は予約時間帯１２時台を表す．
   
-  // 予約をすでに入れているかの確認．
+  // 予約をすでに入れているかの確認．ただし「予約キャンセル」フェーズの場合は382行目の処理へ飛ばさなければならない．
   const nextReservation = await checkNextReservation(ev);
-  if (nextReservation.length) {
+  if (nextReservation.length && splitData[0] !== 'delete') {
     // ユーザーが既に予約を持っている場合の処理
     return client.replyMessage(ev.replyToken, {
       type: "text",
