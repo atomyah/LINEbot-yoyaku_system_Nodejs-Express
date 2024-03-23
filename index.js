@@ -335,6 +335,7 @@ const handlePostbackEvent = async (ev) => {
   //splitData配列例：[ 'time', '4', '2020-09-30', '3' ] timeは希望時間帯のpostbackだよ、という意味．
   // 4は希望メニューの「ﾏｯｻｰｼﾞ&ﾊﾟｯｸ」のこと、3は予約時間帯１２時台を表す．
   
+
   // 予約をすでに入れているかの確認．ただし「予約キャンセル」フェーズの場合は382行目の処理へ飛ばさなければならない．
   const nextReservation = await checkNextReservation(ev);
   if (nextReservation.length && splitData[0] !== 'delete') {
@@ -344,6 +345,7 @@ const handlePostbackEvent = async (ev) => {
       text: "すでに予約を入れてます。変更したい場合は今の予約を一旦「キャンセル」頂き、あらためて新規に予約して下さい。"
     });
   } else {
+
       if(splitData[0] === 'menu'){
           const orderedMenu = splitData[1]; // splitData[1]には,0,1,2のいずれかの文字列が入ってる．
           askDate(ev,orderedMenu);
@@ -394,13 +396,11 @@ const handlePostbackEvent = async (ev) => {
             });
           })
           .catch(e=>console.log(e));
-          // "キャンセルを取りやめる"をクリックした時のPostbackデータは、"delete&stopcancel"
-          if(splitData[1] === 'stopcancel'){
-            return client.replyMessage(ev.replyToken,{
-              "type":"text",
-              "text":"予約キャンセルを中断しました。"
-            });
-          }
+      }else if(splitData[1] === 'stopcancel'){  // "キャンセルを取りやめる"をクリックした時のPostbackデータは、"delete&stopcancel"
+        return client.replyMessage(ev.replyToken,{
+          "type":"text",
+          "text":"予約キャンセルを中断しました。"
+        });
       }else if(splitData[0] === 'cancel' || splitData[0] === 'no'|| splitData[0] === 'end'){
         // orderChoice()で「選択終了」ボタンのPostbackデータがcancel, confirmation()の「いいえ」のPostbackデータがno, askTimeの「中止」ボタンがend
         return client.replyMessage(ev.replyToken,{
@@ -409,6 +409,7 @@ const handlePostbackEvent = async (ev) => {
         });
         // handleMessageEvent()の'予約キャンセル'の「キャンセルを取りやめる」をクリックした時のPostbackデータがdelete&stopcancel
       }
+
   }
 }
 
@@ -594,28 +595,7 @@ const askDate = (ev,orderedMenu) => {
 
 //////////////////
 /// getReservedTimes関数.指定された日付における予約済みの時間帯を取得するための関数. askTimeの中で使う（getReservedTimes(selectedDate)のように）
-const getReservedTimes = async (selectedDate) => {
-  const selectQuery = {
-      text: 'SELECT starttime FROM reservations WHERE scheduledate = $1;',
-      values: [selectedDate],
-  };
 
-  try {
-      const res = await connection.query(selectQuery);
-      const reservedTimes = [];
-
-      res.rows.forEach((reservation) => {
-          const startTime = parseInt(reservation.starttime);
-          const timeSlot = Math.floor((startTime % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
-          reservedTimes.push(timeSlot);
-      });
-
-      return reservedTimes;
-  } catch (error) {
-      console.error('Error fetching reserved times:', error);
-      return [];
-  }
-};
 
 
 // LINE Flex Message（予約希望時間を聞く）を表示するaskTime関数．askTime(ev, 0, '2020-09-30')のような形で呼ばれる．
