@@ -394,18 +394,20 @@ const handlePostbackEvent = async (ev) => {
             });
           })
           .catch(e=>console.log(e));
+          // "キャンセルを取りやめる"をクリックした時のPostbackデータは、"delete&stopcancel"
+          if(splitData[1] === 'stopcancel'){
+            return client.replyMessage(ev.replyToken,{
+              "type":"text",
+              "text":"予約キャンセルを中断しました。"
+            });
+          }
       }else if(splitData[0] === 'cancel' || splitData[0] === 'no'|| splitData[0] === 'end'){
         // orderChoice()で「選択終了」ボタンのPostbackデータがcancel, confirmation()の「いいえ」のPostbackデータがno, askTimeの「中止」ボタンがend
         return client.replyMessage(ev.replyToken,{
           "type":"text",
           "text":"予約受付を中断します。またのご連絡をお待ちしております。"
         });
-        // handleMessageEvent()の'予約キャンセル'の「キャンセルを取りやめる」をクリックした時のPostbackデータがstopcancel
-      }else if(splitData[1] === 'stopcancel'){
-        return client.replyMessage(ev.replyToken,{
-          "type":"text",
-          "text":"予約キャンセルを中断しました。"
-        });
+        // handleMessageEvent()の'予約キャンセル'の「キャンセルを取りやめる」をクリックした時のPostbackデータがdelete&stopcancel
       }
   }
 }
