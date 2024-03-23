@@ -335,13 +335,13 @@ const handlePostbackEvent = async (ev) => {
   //splitData配列例：[ 'time', '4', '2020-09-30', '3' ] timeは希望時間帯のpostbackだよ、という意味．
   // 4は希望メニューの「ﾏｯｻｰｼﾞ&ﾊﾟｯｸ」のこと、3は予約時間帯１２時台を表す．
   
+  // 予約をすでに入れているかの確認．
   const nextReservation = await checkNextReservation(ev);
-
   if (nextReservation.length) {
     // ユーザーが既に予約を持っている場合の処理
     return client.replyMessage(ev.replyToken, {
       type: "text",
-      text: "すでに予約が入っています。変更したい場合は今の予約を一旦「キャンセル」頂き、あらためて新規に予約して下さい。"
+      text: "すでに予約を入れてます。変更したい場合は今の予約を一旦「キャンセル」頂き、あらためて新規に予約して下さい。"
     });
   } else {
       if(splitData[0] === 'menu'){
@@ -549,6 +549,9 @@ const orderChoice = (ev) => {
 }
 
 // LINE Flex Message（予約希望日を聞く）を表示するaskDate関数. askDate(ev,orderedMenu)のorderedMenuには1,2,3のいずれかの文字列が入ってる．
+const now = new Date();
+const minDate = now.toISOString().slice(0, 10); // 現在日時を"YYYY-MM-DD"の形式で取得
+
 const askDate = (ev,orderedMenu) => {
   return client.replyMessage(ev.replyToken,{
       "type":"flex",
@@ -577,7 +580,8 @@ const askDate = (ev,orderedMenu) => {
                 "type": "datetimepicker",
                 "label": "希望日を選択する",
                 "data": `date&${orderedMenu}`,
-                "mode": "date"
+                "mode": "date",
+                "min": `${minDate}`
               }
             }
           ]
