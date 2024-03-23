@@ -396,11 +396,13 @@ const handlePostbackEvent = async (ev) => {
             });
           })
           .catch(e=>console.log(e));
-      }else if(splitData[1] === 'stopcancel'){  // "キャンセルを取りやめる"をクリックした時のPostbackデータは、"delete&stopcancel"
-        return client.replyMessage(ev.replyToken,{
-          "type":"text",
-          "text":"予約キャンセルを中断しました。"
-        });
+          // "キャンセルを取りやめる"をクリックした時のPostbackデータは、"delete&stopcancel"
+          if(splitData[1] === 'stopcancel'){
+            return client.replyMessage(ev.replyToken,{
+              "type":"text",
+              "text":"予約キャンセルを中断しました。"
+            });
+          }
       }else if(splitData[0] === 'cancel' || splitData[0] === 'no'|| splitData[0] === 'end'){
         // orderChoice()で「選択終了」ボタンのPostbackデータがcancel, confirmation()の「いいえ」のPostbackデータがno, askTimeの「中止」ボタンがend
         return client.replyMessage(ev.replyToken,{
@@ -409,7 +411,7 @@ const handlePostbackEvent = async (ev) => {
         });
         // handleMessageEvent()の'予約キャンセル'の「キャンセルを取りやめる」をクリックした時のPostbackデータがdelete&stopcancel
       }
-
+      
   }
 }
 
@@ -595,7 +597,28 @@ const askDate = (ev,orderedMenu) => {
 
 //////////////////
 /// getReservedTimes関数.指定された日付における予約済みの時間帯を取得するための関数. askTimeの中で使う（getReservedTimes(selectedDate)のように）
+const getReservedTimes = async (selectedDate) => {
+  const selectQuery = {
+      text: 'SELECT starttime FROM reservations WHERE scheduledate = $1;',
+      values: [selectedDate],
+  };
 
+  try {
+      const res = await connection.query(selectQuery);
+      const reservedTimes = [];
+
+      res.rows.forEach((reservation) => {
+          const startTime = parseInt(reservation.starttime);
+          const timeSlot = Math.floor((startTime % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+          reservedTimes.push(timeSlot);
+      });
+
+      return reservedTimes;
+  } catch (error) {
+      console.error('Error fetching reserved times:', error);
+      return [];
+  }
+};
 
 
 // LINE Flex Message（予約希望時間を聞く）を表示するaskTime関数．askTime(ev, 0, '2020-09-30')のような形で呼ばれる．
