@@ -375,8 +375,11 @@ const handlePostbackEvent = async (ev) => {
          });
        })
        .catch(e=>console.log(e));
-  }else if(splitData[0] === 'no'){
-    // あとで何か入れる
+  }else if(splitData[0] === 'cancel' || splitData[0] === 'no'){ // orderChoice()で「選択終了」ボタンのPostbackデータがcancel, confirmation()の「いいえ」のPostbackデータがno
+    return client.replyMessage(ev.replyToken,{
+      "type":"text",
+      "text":"予約受付を中断します。またのご連絡をお待ちしております（「予約する」ボタンから始めてください）"
+    });
   }
 }
 
