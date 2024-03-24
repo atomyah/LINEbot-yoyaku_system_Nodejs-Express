@@ -612,11 +612,11 @@ const getReservedTimes = async (selectedDate) => {
           const treatmentTime = INITIAL_TREAT[menuNum] * 60 * 1000; // 施術時間をミリ秒単位で取得
 
           // 予約の時間帯を取得し、施術時間に合わせて時間枠を追加する
-          for (let time = startTime; time < endTime; time += treatmentTime) {
+          for (let time = startTime; time < endTime; time += (60 * 60 * 1000)) {
               reservedTimeSlots.add(Math.floor((time % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000)));
           }
       });
-      console.log("▲reservedTimeSlotsは（getReservedTimesの中）、", reservedTimeSlots); // 出力→Set(3) { 3, 7, 10 }
+      console.log("▲reservedTimeSlotsは（getReservedTimesの中）、", reservedTimeSlots); // 出力→Set(3) { 3, 7, 10 }．１２時、１６時（２時間枠）、１９時
       return reservedTimeSlots;
   } catch (error) {
       console.error('Error fetching reserved times:', error);
@@ -630,7 +630,7 @@ const askTime = async (ev, orderedMenu, selectedDate) => {
   const menuNumber = parseInt(orderedMenu);
   const reservedTimes = await getReservedTimes(selectedDate); // 予約済みの時間帯を取得する関数
 
-  console.log("▲reservedTimesは（askTimeの中）、", reservedTimes);
+  console.log("▲reservedTimesは（askTimeの中）、", reservedTimes);  // 出力→Set(3) { 3, 7, 10 }. １２時、１６時（２時間枠）、１９時
   // LINE Flex Messageのボタンを設定
   // const buttons = [];
   // for (let i = 9; i <= 19; i++) {
