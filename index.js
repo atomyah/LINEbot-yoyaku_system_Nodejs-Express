@@ -381,7 +381,7 @@ const handlePostbackEvent = async (ev) => {
           });
         })
         .catch(e=>console.log(e));
-      }else if(splitData[0] === 'delete'){ // handleMessageEvent()のif(text="予約キャンセル"){checkNextReservation(ev)}からのpostbackデータから来ている. `delete&${id}`
+      }else if(splitData[0] === 'delete' && splitData[1] !== 'stopcancel'){ // handleMessageEvent()のif(text="予約キャンセル"){checkNextReservation(ev)}からのpostbackデータから来ている. `delete&${id}`
         const id = parseInt(splitData[1]); // handleMessageEvent()の'予約キャンセル'の場合のFlex messageの"data": `delete&${id}`から来てる&でスプリットした二つ目はid値
         const deleteQuery = {
           text:'DELETE FROM reservations WHERE id = $1;',
@@ -397,19 +397,17 @@ const handlePostbackEvent = async (ev) => {
           })
           .catch(e=>console.log(e));
           // "キャンセルを取りやめる"をクリックした時のPostbackデータは、"delete&stopcancel"
-          if(splitData[1] === 'stopcancel'){
+      }else if(splitData[0] === 'delete' && splitData[1] === 'stopcancel'){
             return client.replyMessage(ev.replyToken,{
               "type":"text",
               "text":"予約キャンセルを中断しました。"
             });
-          }
       }else if(splitData[0] === 'cancel' || splitData[0] === 'no'|| splitData[0] === 'end'){
         // orderChoice()で「選択終了」ボタンのPostbackデータがcancel, confirmation()の「いいえ」のPostbackデータがno, askTimeの「中止」ボタンがend
         return client.replyMessage(ev.replyToken,{
           "type":"text",
           "text":"予約受付を中断します。またのご連絡をお待ちしております。"
         });
-        // handleMessageEvent()の'予約キャンセル'の「キャンセルを取りやめる」をクリックした時のPostbackデータがdelete&stopcancel
       }
       
   }
