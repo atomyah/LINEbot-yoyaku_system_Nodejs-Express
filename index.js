@@ -337,14 +337,14 @@ const handlePostbackEvent = async (ev) => {
   
 
   // 予約をすでに入れているかの確認．ただし「予約キャンセル」フェーズの場合は382行目の処理へ飛ばさなければならない．
-  const nextReservation = await checkNextReservation(ev);
-  if (nextReservation.length && splitData[0] !== 'delete') {
-    // ユーザーが既に予約を持っている場合の処理
-    return client.replyMessage(ev.replyToken, {
-      type: "text",
-      text: "すでに予約を入れてます。変更したい場合は今の予約を一旦「キャンセル」頂き、あらためて新規に予約して下さい。"
-    });
-  } else {
+  // const nextReservation = await checkNextReservation(ev);
+  // if (nextReservation.length && splitData[0] !== 'delete') {
+  //   // ユーザーが既に予約を持っている場合の処理
+  //   return client.replyMessage(ev.replyToken, {
+  //     type: "text",
+  //     text: "すでに予約を入れてます。変更したい場合は今の予約を一旦「キャンセル」頂き、あらためて新規に予約して下さい。"
+  //   });
+  // } else {
 
       if(splitData[0] === 'menu'){
           const orderedMenu = splitData[1]; // splitData[1]には,0,1,2のいずれかの文字列が入ってる．
@@ -410,7 +410,7 @@ const handlePostbackEvent = async (ev) => {
         });
       }
       
-  }
+  // }
 }
 
 /// 施術開始時間を1970年1/1 0時からのミリ秒で取得する.
@@ -597,24 +597,30 @@ const askDate = (ev,orderedMenu) => {
 /// getReservedTimes関数.指定された日付における予約済みの時間帯を取得するための関数. askTimeの中で使う（getReservedTimes(selectedDate)のように）
 const getReservedTimes = async (selectedDate) => {
   const selectQuery = {
-      text: 'SELECT starttime FROM reservations WHERE scheduledate = $1;',
+      text: 'SELECT starttime, endtime, menu FROM reservations WHERE scheduledate = $1;',
       values: [selectedDate],
   };
 
   try {
       const res = await connection.query(selectQuery);
-      const reservedTimes = [];
+      const reservedTimeSlots = new Set(); // 予約済みの時間帯を格納するためのSet
 
       res.rows.forEach((reservation) => {
           const startTime = parseInt(reservation.starttime);
-          const timeSlot = Math.floor((startTime % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
-          reservedTimes.push(timeSlot);
-      });
+          const endTime = parseInt(reservation.endtime);
+          const menuNum = parseInt(reservation.menu)
+          const treatmentTime = INITIAL_TREAT[menuNum] * 60 * 1000; // 施術時間をミリ秒単位で取得
 
-      return reservedTimes;
+          // 予約の時間帯を取得し、施術時間に合わせて時間枠を追加する
+          for (let time = startTime; time < endTime; time += treatmentTime) {
+              reservedTimeSlots.add(Math.floor((time % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000)));
+          }
+      });
+      console.log("reservedTimeSlotsは、" . reservedTimeSlots);
+      return reservedTimeSlots;
   } catch (error) {
       console.error('Error fetching reserved times:', error);
-      return [];
+      return new Set(); // エラー時は空のSetを返す
   }
 };
 
