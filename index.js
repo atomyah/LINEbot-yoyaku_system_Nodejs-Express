@@ -626,72 +626,80 @@ const getReservedTimes = async (selectedDate) => {
 
 
 // LINE Flex Message（予約希望時間を聞く）を表示するaskTime関数．askTime(ev, 0, '2020-09-30')のような形で呼ばれる．
-const askTime = async (ev, orderedMenu, selectedDate, reservedTimeSlots) => {
-  console.log("▲reservedTimeSlotsは（askTimeの中）、", reservedTimeSlots);  // 出力→Set(4) { 3, 7,8, 10 }．１２時、１６時（２時間枠）、１９時
- 
-  const buttons = [];
-  for (let i = 0; i < 11; i++) {
-      const hour = i + 9;
-      const timeSlot = `${hour}時-`;
-      const button = {
+const askTime = async (ev, orderedMenu, selectedDate) => {
+
+  try {
+    
+      const reservedTimeSlots = await getReservedTimes(selectedDate);
+
+      console.log("▲reservedTimeSlotsは（askTimeの中）、", reservedTimeSlots);  // 出力→Set(4) { 3, 7,8, 10 }．１２時、１６時（２時間枠）、１９時
+    
+      const buttons = [];
+      for (let i = 0; i < 11; i++) {
+          const hour = i + 9;
+          const timeSlot = `${hour}時-`;
+          const button = {
+              type: 'button',
+              action: {
+                  type: 'postback',
+                  label: timeSlot,
+                  data: `time&${orderedMenu}&${selectedDate}&${i}`,
+              },
+              style: reservedTimeSlots.has(i) ? 'secondary' : 'primary',
+              color: reservedTimeSlots.has(i) ? '#AA0000' : '#00AA00',
+              margin: 'md',
+          };
+          buttons.push(button);
+      }
+
+      buttons.push({
           type: 'button',
           action: {
               type: 'postback',
-              label: timeSlot,
-              data: `time&${orderedMenu}&${selectedDate}&${i}`,
+              label: '中止',
+              data: 'end',
           },
-          style: reservedTimeSlots.has(i) ? 'secondary' : 'primary',
-          color: reservedTimeSlots.has(i) ? '#AA0000' : '#00AA00',
+          style: 'primary',
+          color: '#999999',
           margin: 'md',
-      };
-      buttons.push(button);
+      });
+
+      return client.replyMessage(ev.replyToken, {
+          type: 'flex',
+          altText: '予約日選択',
+          contents: {
+              type: 'bubble',
+              header: {
+                  type: 'box',
+                  layout: 'vertical',
+                  contents: [
+                      {
+                          type: 'text',
+                          text: 'ご希望の時間帯を選択してください（緑=予約可能です）',
+                          wrap: true,
+                          size: 'lg',
+                      },
+                      {
+                          type: 'separator',
+                      },
+                  ],
+              },
+              body: {
+                  type: 'box',
+                  layout: 'vertical',
+                  contents: [
+                      {
+                          type: 'box',
+                          layout: 'vertical',
+                          contents: buttons,
+                      },
+                  ],
+              },
+          },
+      });
+  } catch {
+    console.error('Error fetching reserved times', error);
   }
-
-  buttons.push({
-      type: 'button',
-      action: {
-          type: 'postback',
-          label: '中止',
-          data: 'end',
-      },
-      style: 'primary',
-      color: '#999999',
-      margin: 'md',
-  });
-
-  return client.replyMessage(ev.replyToken, {
-      type: 'flex',
-      altText: '予約日選択',
-      contents: {
-          type: 'bubble',
-          header: {
-              type: 'box',
-              layout: 'vertical',
-              contents: [
-                  {
-                      type: 'text',
-                      text: 'ご希望の時間帯を選択してください（緑=予約可能です）',
-                      wrap: true,
-                      size: 'lg',
-                  },
-                  {
-                      type: 'separator',
-                  },
-              ],
-          },
-          body: {
-              type: 'box',
-              layout: 'vertical',
-              contents: [
-                  {
-                      type: 'box',
-                      layout: 'vertical',
-                      contents: buttons,
-                  },
-              ],
-          },
-      },
-  });
 };
 
 //   return client.replyMessage(ev.replyToken,{
