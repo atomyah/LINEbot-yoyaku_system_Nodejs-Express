@@ -11,7 +11,7 @@ const { Client } = require('pg');
 // 「カット、シャンプー、カラーリンング、ヘッドスパ、ﾏｯｻｰｼﾞ&ﾊﾟｯｸ、眉整え、顔そり」にかかるデフォルトの時間
 
 // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓　とはいうもののメニューごとの時間を一応設定　↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
-const INITIAL_TREAT = [60,60,90];  //施術時間値
+const INITIAL_TREAT = [60,60,120];  //施術時間値
 //「'ボディトークセッション','ホリスティックコンディション','パーソナルビルドアップ'」にかかるデフォルトの時間
 
 const MENU = ['ボディトークセッション','ホリスティックコンディション','パーソナルビルドアップ'];
@@ -421,13 +421,13 @@ const timeConversion = (date,time) => {
 }
 
 // calcTreatTime('U559cea57076f1f2383db950ef23125ac', 0)とかの形で実行される．
-// const INITIAL_TREAT = [60,60,90]; 施術時間値.前からボディトーク60分、ホリスティック60分、マンツーフィット90分．
+// const INITIAL_TREAT = [60,60,120]; 施術時間値.前からボディトーク60分、ホリスティック60分、マンツーフィット90分．
 // menuには0,1,2のどれかが入っている．
 const calcTreatTime = (id,menu) => {
   return new Promise((resolve, reject)=>{
     console.log('その2');
     const menuNumber = parseInt(menu); // 0,1,2は文字列なのでparseIntで数値に．
-    const treatTime = INITIAL_TREAT[menuNumber] // const INITIAL_TREAT = [60,60,90]からmenuNumberをインデックスとしてmenuごとの施術時間を取り出す（分単位）
+    const treatTime = INITIAL_TREAT[menuNumber] // const INITIAL_TREAT = [60,60,120]からmenuNumberをインデックスとしてmenuごとの施術時間を取り出す（分単位）
     
     console.log('その3');
     resolve(treatTime);
