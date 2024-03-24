@@ -638,21 +638,23 @@ const askTime = async (ev, orderedMenu, selectedDate) => {
           const hour = i + 9;
           const timeSlot = `${hour}時-`;
 
-          // ボタンが押されたときに予約可能かどうかを確認
+           // ボタンが押されたときに予約可能かどうかを確認
           const isReserved = reservedTimeSlots.has(i);
           const buttonStyle = isReserved ? 'secondary' : 'primary';
           const buttonColor = isReserved ? '#AA0000' : '#00AA00';
+          const buttonDisabled = isReserved ? true : false; // 予約済みの場合はボタンを無効にする
 
           const button = {
-              type: 'button',
-              action: {
-                  type: 'postback',
-                  label: timeSlot,
-                  data: `time&${orderedMenu}&${selectedDate}&${i}`,
-              },
-              style: reservedTimeSlots.has(i) ? 'secondary' : 'primary',
-              color: reservedTimeSlots.has(i) ? '#AA0000' : '#00AA00',
-              margin: 'md',
+            type: 'button',
+            action: {
+              type: 'postback',
+              label: timeSlot,
+              data: `time&${orderedMenu}&${selectedDate}&${i}`,
+            },
+            style: buttonStyle,
+            color: buttonColor,
+            margin: 'md',
+            disabled: buttonDisabled, // 予約済みの場合はボタンを無効にする
           };
           buttons.push(button);
       }
