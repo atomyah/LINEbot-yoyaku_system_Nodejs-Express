@@ -654,7 +654,7 @@ const askTime = async (ev, orderedMenu, selectedDate) => {
             style: buttonStyle,
             color: buttonColor,
             margin: 'md',
-            disabled: buttonDisabled, // 予約済みの場合はボタンを無効にする
+            //disabled: buttonDisabled, // 予約済みの場合はボタンを無効にする
           };
           buttons.push(button);
       }
