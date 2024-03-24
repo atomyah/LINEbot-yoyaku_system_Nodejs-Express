@@ -634,7 +634,7 @@ const askTime = async (ev, orderedMenu, selectedDate) => {
   const buttons = [];
   for (let i = 9; i <= 19; i++) {
       const timeSlot = i - 9;
-      const reserved = reservedTimes.includes(timeSlot); // 予約済みかどうかを判定
+      const reserved = reservedTimes.has(timeSlot); // 予約済みかどうかを判定
 
       // ボタンの色を決定
       const buttonColor = reserved ? "#FF0000" : "#00AA00";
