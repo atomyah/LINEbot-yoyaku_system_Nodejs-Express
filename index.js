@@ -627,9 +627,8 @@ const getReservedTimes = async (selectedDate) => {
 
 // LINE Flex Message（予約希望時間を聞く）を表示するaskTime関数．askTime(ev, 0, '2020-09-30')のような形で呼ばれる．
 const askTime = async (ev, orderedMenu, selectedDate) => {
-
+  
   try {
-    
       const reservedTimeSlots = await getReservedTimes(selectedDate);
 
       console.log("▲reservedTimeSlotsは（askTimeの中）、", reservedTimeSlots);  // 出力→Set(4) { 3, 7,8, 10 }．１２時、１６時（２時間枠）、１９時
@@ -638,6 +637,12 @@ const askTime = async (ev, orderedMenu, selectedDate) => {
       for (let i = 0; i < 11; i++) {
           const hour = i + 9;
           const timeSlot = `${hour}時-`;
+
+          // ボタンが押されたときに予約可能かどうかを確認
+          const isReserved = reservedTimeSlots.has(i);
+          const buttonStyle = isReserved ? 'secondary' : 'primary';
+          const buttonColor = isReserved ? '#AA0000' : '#00AA00';
+
           const button = {
               type: 'button',
               action: {
@@ -675,7 +680,7 @@ const askTime = async (ev, orderedMenu, selectedDate) => {
                   contents: [
                       {
                           type: 'text',
-                          text: 'ご希望の時間帯を選択してください（緑=予約可能です）',
+                          text: 'ご希望の時間帯を選択してください（緑=予約可能,、赤=予約不可）',
                           wrap: true,
                           size: 'lg',
                       },
