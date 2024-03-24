@@ -616,7 +616,7 @@ const getReservedTimes = async (selectedDate) => {
               reservedTimeSlots.add(Math.floor((time % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000)));
           }
       });
-      console.log("reservedTimeSlotsは、" . reservedTimeSlots);
+      console.log("reservedTimeSlotsは、", reservedTimeSlots);
       return reservedTimeSlots;
   } catch (error) {
       console.error('Error fetching reserved times:', error);
@@ -654,34 +654,196 @@ const askTime = async (ev, orderedMenu, selectedDate) => {
       };
 
       buttons.push(button);
+      console.log('buttonsは、', buttons)
   }
 
-  return client.replyMessage(ev.replyToken, {
-      type: "flex",
-      altText: "予約日選択",
-      contents: {
-          type: "bubble",
-          header: {
-              type: "box",
-              layout: "vertical",
-              contents: [
-                  {
-                      type: "text",
-                      text: "ご希望の時間帯を選択してください（赤色=予約不可）",
-                      wrap: true,
-                      size: "lg",
+  return client.replyMessage(ev.replyToken,{
+    "type":"flex",
+    "altText":"予約日選択",
+    "contents":
+    {
+        "type": "bubble",
+        "header": {
+          "type": "box",
+          "layout": "vertical",
+          "contents": [
+            {
+              "type": "text",
+              "text": "ご希望の時間帯を選択してください（緑=予約可能です）",
+              "wrap": true,
+              "size": "lg"
+            },
+            {
+              "type": "separator"
+            }
+          ]
+        },
+        "body": {
+          "type": "box",
+          "layout": "vertical",
+          "contents": [
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "contents": [
+                {
+                  "type": "button",
+                  "action": {
+                    "type": "postback",
+                    "label": "9時-",
+                    "data":`time&${orderedMenu}&${selectedDate}&0`
                   },
-                  {
-                      type: "separator",
+                  "style": "primary",
+                  "color": "#00AA00",
+                  "margin": "md"
+                },
+                {
+                  "type": "button",
+                  "action": {
+                    "type": "postback",
+                    "label": "10時-",
+                    "data": `time&${orderedMenu}&${selectedDate}&1`
                   },
+                  "style": "primary",
+                  "color": "#00AA00",
+                  "margin": "md"
+                },
+                {
+                  "type": "button",
+                  "action": {
+                    "type": "postback",
+                    "label": "11時-",
+                    "data": `time&${orderedMenu}&${selectedDate}&2`
+                  },
+                  "style": "primary",
+                  "color": "#00AA00",
+                  "margin": "md"
+                }
+              ]
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "contents": [
+                {
+                  "type": "button",
+                  "action": {
+                    "type": "postback",
+                    "label": "12時-",
+                    "data": `time&${orderedMenu}&${selectedDate}&3`
+                  },
+                  "style": "primary",
+                  "color": "#00AA00",
+                  "margin": "md"
+                },
+                {
+                  "type": "button",
+                  "action": {
+                    "type": "postback",
+                    "label": "13時-",
+                    "data": `time&${orderedMenu}&${selectedDate}&4`
+                  },
+                  "style": "primary",
+                  "color": "#00AA00",
+                  "margin": "md"
+                },
+                {
+                  "type": "button",
+                  "action": {
+                    "type": "postback",
+                    "label": "14時-",
+                    "data": `time&${orderedMenu}&${selectedDate}&5`
+                  },
+                  "style": "primary",
+                  "color": "#00AA00",
+                  "margin": "md"
+                }
               ],
-          },
-          body: {
-              type: "box",
-              layout: "vertical",
-              contents: buttons, // ボタンの配列をcontentsにセット
-          },
-      },
+              "margin": "md"
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "contents": [
+                {
+                  "type": "button",
+                  "action": {
+                    "type": "postback",
+                    "label": "15時-",
+                    "data": `time&${orderedMenu}&${selectedDate}&6`
+                  },
+                  "style": "primary",
+                  "color": "#00AA00",
+                  "margin": "md"
+                },
+                {
+                  "type": "button",
+                  "action": {
+                    "type": "postback",
+                    "label": "16時-",
+                    "data": `time&${orderedMenu}&${selectedDate}&7`
+                  },
+                  "style": "primary",
+                  "color": "#00AA00",
+                  "margin": "md"
+                },
+                {
+                  "type": "button",
+                  "action": {
+                    "type": "postback",
+                    "label": "17時-",
+                    "data": `time&${orderedMenu}&${selectedDate}&8`
+                  },
+                  "style": "primary",
+                  "color": "#00AA00",
+                  "margin": "md"
+                }
+              ],
+              "margin": "md"
+            },
+            {
+              "type": "box",
+              "layout": "horizontal",
+              "contents": [
+                {
+                  "type": "button",
+                  "action": {
+                    "type": "postback",
+                    "label": "18時-",
+                    "data": `time&${orderedMenu}&${selectedDate}&9`
+                  },
+                  "style": "primary",
+                  "color": "#00AA00",
+                  "margin": "md"
+                },
+                {
+                  "type": "button",
+                  "action": {
+                    "type": "postback",
+                    "label": "19時-",
+                    "data": `time&${orderedMenu}&${selectedDate}&10`
+                  },
+                  "style": "primary",
+                  "color": "#00AA00",
+                  "margin": "md"
+                },
+                {
+                  "type": "button",
+                  "action": {
+                    "type": "postback",
+                    "label": "中止",
+                    "data": "end"
+                  },
+                  "style": "primary",
+                  "color": "#999999",
+                  "margin": "md"
+                }
+              ],
+              "margin": "md"
+            }
+          ]
+        }
+      }       
   });
 };
 
