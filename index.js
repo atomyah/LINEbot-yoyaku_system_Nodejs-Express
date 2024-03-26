@@ -357,21 +357,33 @@ const handlePostbackEvent = async (ev) => {
           const orderedMenu = splitData[1]; // 0
           const selectedDate = splitData[2]; // 2020-09-30
           const selectedTime = splitData[3]; // 3 -> 0~10まである. 0が９時の枠で10が１９時の枠を表す．
-          // 予約済み時間枠の場合はelse if{}を抜ける．
-            console.log('selectedData△', selectedDate);
-            console.log('selectedTime△', selectedTime);
+
+          // 予約済み時間枠を選択の場合は「予約が入っております」メッセージを表示．そうでなければconfirmation()を表示する．
           const reservedTimeSlots = await getReservedTimes(selectedDate) // reservedTimeSlotsを返す．例：Set(4) { 3, 7,8, 10 }．１２時、１６時（２時間枠）、１９時
           const selectedTimeNum = parseInt(selectedTime); // 数値型にしないとreservedTimeSlots.has('数値')が機能しない．
-            console.log('selectedNum△', selectedTimeNum);
-          const isReserved = reservedTimeSlots.has(selectedTimeNum);
+        
+          // orderedMenuが2（パーソナルフィッティング）の場合、120分（2時間）の施術時間があるので、終了時間もチェックする
+          let endTime = selectedTimeNum;
+          if (orderedMenu === '2') {
+              endTime += 1; // 1つ後の時間帯も予約不可とする
+          }
+
+          // 予約が可能かどうかをチェック．orderedMenuが2の時以外はfor文は一周しかしない．
+          let isReserved = false;
+          for (let i = selectedTimeNum; i <= endTime; i++) {
+              if (reservedTimeSlots.has(i)) {
+                  isReserved = true;
+                  break;
+              }
+          }         
+    
+          // const isReserved = reservedTimeSlots.has(selectedTimeNum);
           if(isReserved){
-              console.log('isReserved YES!▲', isReserved);
             return client.replyMessage(ev.replyToken,{
               "type":"text",
               "text":"予約が入っております。別の時間枠を選択下さい。"
             });
           }else {
-              console.log('isReserved NO!▲', isReserved)
             confirmation(ev,orderedMenu,selectedDate,selectedTime); // confirmation(ev, 0, '2020-09-30', 0)等となる．
           }
       }else if(splitData[0] === 'yes'){   // confirmation()からpostbackデータ`yes&${menu}&${date}&${time}`が返ってくる．例えば`yes&0&2020-09-30&0`のような形．
