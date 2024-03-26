@@ -361,7 +361,9 @@ const handlePostbackEvent = async (ev) => {
             console.log('selectedData△', selectedDate);
             console.log('selectedTime△', selectedTime);
           const reservedTimeSlots = await getReservedTimes(selectedDate) // reservedTimeSlotsを返す．例：Set(4) { 3, 7,8, 10 }．１２時、１６時（２時間枠）、１９時
-          const isReserved = reservedTimeSlots.has(selectedTime);
+          const selectedTimeNum = parseInt(selectedTime); // 数値型にしないとreservedTimeSlots.has('数値')が機能しない．
+            console.log('selectedNum△', selectedTimeNum);
+          const isReserved = reservedTimeSlots.has(selectedTimeNum);
           if(isReserved){
               console.log('isReserved YES!▲', isReserved);
             return client.replyMessage(ev.replyToken,{
