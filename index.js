@@ -357,7 +357,19 @@ const handlePostbackEvent = async (ev) => {
           const orderedMenu = splitData[1]; // 0
           const selectedDate = splitData[2]; // 2020-09-30
           const selectedTime = splitData[3]; // 3 -> 0~10まである. 0が９時の枠で10が１９時の枠を表す．
-          confirmation(ev,orderedMenu,selectedDate,selectedTime); // confirmation(ev, 0, '2020-09-30', 0)等となる．
+          // 予約済み時間枠の場合はelse if{}を抜ける．
+          const reservedTimeSlots = await getReservedTimes(splitData[2]) // reservedTimeSlotsを返す．例：Set(4) { 3, 7,8, 10 }．１２時、１６時（２時間枠）、１９時
+          const isReserved = reservedTimeSlots.has(splitData[3]);
+          if(isReserved){
+            console.log('isReserved YES!▲', isReserved);
+            return client.replyMessage(ev.replyToken,{
+              "type":"text",
+              "text":"予約が入っております。別の時間枠を選択下さい。"
+            });
+          }else {
+            console.log('isReserved NO!▲', isReserved)
+            confirmation(ev,orderedMenu,selectedDate,selectedTime); // confirmation(ev, 0, '2020-09-30', 0)等となる．
+          }
       }else if(splitData[0] === 'yes'){   // confirmation()からpostbackデータ`yes&${menu}&${date}&${time}`が返ってくる．例えば`yes&0&2020-09-30&0`のような形．
         const orderedMenu = splitData[1]; // 0 (ボディトークセッション)
         const selectedDate = splitData[2];  // 2020-09-30
@@ -639,10 +651,9 @@ const askTime = async (ev, orderedMenu, selectedDate) => {
           const timeSlot = `${hour}時-`;
 
            // ボタンが押されたときに予約可能かどうかを確認
-          const isReserved = reservedTimeSlots.has(i);
+          const isReserved = reservedTimeSlots.has(i);  // isReservedには`i=0`:`false`が格納される？
           const buttonStyle = isReserved ? 'secondary' : 'primary';
           const buttonColor = isReserved ? '#AA0000' : '#00AA00';
-          const buttonDisabled = isReserved ? true : false; // 予約済みの場合はボタンを無効にする
 
           const button = {
             type: 'button',
@@ -684,7 +695,7 @@ const askTime = async (ev, orderedMenu, selectedDate) => {
                           type: 'text',
                           text: 'ご希望の時間帯を選択してください（緑=予約可能,、赤=予約不可）',
                           wrap: true,
-                          size: 'lg',
+                          size: 'md',
                       },
                       {
                           type: 'separator',
