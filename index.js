@@ -400,15 +400,48 @@ const handlePostbackEvent = async (ev) => {
           text:'INSERT INTO reservations (line_uid, name, scheduledate, starttime, endtime, menu) VALUES($1,$2,$3,$4,$5,$6);',
           values:[ev.source.userId,profile.displayName,selectedDate,startTimestamp,endTimestamp,orderedMenu]
         };
-        connection.query(insertQuery)
-        .then(res=>{
-          console.log('データ格納成功！');
-          client.replyMessage(ev.replyToken,{
-            "type":"text",
-            "text":"予約が完了しました。"
+          ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+          //////// 二人以上同時予約プロセス進行によるダブルブッキングを避けるため、テーブルにINSERTの前にもう一度予約が埋まっていないか再度確認する /////////
+          const reservedTimeSlots = await getReservedTimes(selectedDate);
+          const selectedTimeNum = parseInt(selectedTime);
+          
+          let endTime = selectedTimeNum;
+          if (orderedMenu === '2') {
+              endTime += 1;
+          }
+          
+          let isReserved = false;
+          for (let i = selectedTimeNum; i <= endTime; i++) {
+              if (reservedTimeSlots.has(i)) {
+                  isReserved = true;
+                  break;
+              }
+          }
+          
+          if (isReserved) {
+              return client.replyMessage(ev.replyToken, {
+                  "type": "text",
+                  "text": "先約が入ってしまいました。別の時間枠を選択下さい。"
+              });
+          } else {
+          /// ここまで ///
+          ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+          connection.query(insertQuery)
+          .then(res=>{
+            console.log('データ格納成功！');
+            client.replyMessage(ev.replyToken,{
+              "type":"text",
+              "text":"予約が完了しました。"
+            });
+          })
+          .catch(err => {
+            console.error('データ格納失敗:', err);
+            client.replyMessage(ev.replyToken, {
+                "type": "text",
+                "text": "予約の処理中にエラーが発生しました。再度お試しください。"
+            });
           });
-        })
-        .catch(e=>console.log(e));
+        }
       }else if(splitData[0] === 'delete' && splitData[1] !== 'stopcancel'){ // handleMessageEvent()のif(text="予約キャンセル"){checkNextReservation(ev)}からのpostbackデータから来ている. `delete&${id}`
         const id = parseInt(splitData[1]); // handleMessageEvent()の'予約キャンセル'の場合のFlex messageの"data": `delete&${id}`から来てる&でスプリットした二つ目はid値
         const deleteQuery = {
