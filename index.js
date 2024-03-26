@@ -358,16 +358,18 @@ const handlePostbackEvent = async (ev) => {
           const selectedDate = splitData[2]; // 2020-09-30
           const selectedTime = splitData[3]; // 3 -> 0~10まである. 0が９時の枠で10が１９時の枠を表す．
           // 予約済み時間枠の場合はelse if{}を抜ける．
-          const reservedTimeSlots = await getReservedTimes(splitData[2]) // reservedTimeSlotsを返す．例：Set(4) { 3, 7,8, 10 }．１２時、１６時（２時間枠）、１９時
-          const isReserved = reservedTimeSlots.has(splitData[3]);
+            console.log('selectedData△', selectedDate);
+            console.log('selectedTime△', selectedTime);
+          const reservedTimeSlots = await getReservedTimes(selectedDate) // reservedTimeSlotsを返す．例：Set(4) { 3, 7,8, 10 }．１２時、１６時（２時間枠）、１９時
+          const isReserved = reservedTimeSlots.has(selectedTime);
           if(isReserved){
-            console.log('isReserved YES!▲', isReserved);
+              console.log('isReserved YES!▲', isReserved);
             return client.replyMessage(ev.replyToken,{
               "type":"text",
               "text":"予約が入っております。別の時間枠を選択下さい。"
             });
           }else {
-            console.log('isReserved NO!▲', isReserved)
+              console.log('isReserved NO!▲', isReserved)
             confirmation(ev,orderedMenu,selectedDate,selectedTime); // confirmation(ev, 0, '2020-09-30', 0)等となる．
           }
       }else if(splitData[0] === 'yes'){   // confirmation()からpostbackデータ`yes&${menu}&${date}&${time}`が返ってくる．例えば`yes&0&2020-09-30&0`のような形．
