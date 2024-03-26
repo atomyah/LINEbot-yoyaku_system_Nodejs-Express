@@ -560,7 +560,7 @@ const orderChoice = (ev) => {
                   "type": "button",
                   "action": {
                     "type": "postback",
-                    "label": "ボディトークセッション(60分)",
+                    "label": "ﾎﾞﾃﾞｨﾄｰｸｾｯｼｮﾝ(60分)",
                     "data": "menu&0"
                   },
                   "style": "primary",
@@ -577,7 +577,7 @@ const orderChoice = (ev) => {
                   "type": "button",
                   "action": {
                     "type": "postback",
-                    "label": "ホリスティックコンディション(60分)",
+                    "label": "ﾎﾘｽﾃｨｯｸｺﾝﾃﾞｨｼｮﾝ(60分)",
                     "data": "menu&1"
                   },
                   "margin": "sm",
@@ -595,7 +595,7 @@ const orderChoice = (ev) => {
                   "type": "button",
                   "action": {
                     "type": "postback",
-                    "label": "パーソナルフィッティング(100分)",
+                    "label": "ﾊﾟｰｿﾅﾙﾋﾞﾙﾃﾞｨﾝｸﾞ(100分)",
                     "data": "menu&2"
                   },
                   "margin": "sm",
