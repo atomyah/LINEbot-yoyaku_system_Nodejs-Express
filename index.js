@@ -704,42 +704,35 @@ const getReservedTimes = async (selectedDate) => {
 
 // LINE Flex Message（予約希望時間を聞く）を表示するaskTime関数．askTime(ev, 0, '2020-09-30')のような形で呼ばれる．
 const askTime = async (ev, orderedMenu, selectedDate) => {
+  
   try {
       const reservedTimeSlots = await getReservedTimes(selectedDate);
-      console.log("▲reservedTimeSlotsは（askTimeの中）、", reservedTimeSlots); 
 
+      console.log("▲reservedTimeSlotsは（askTimeの中）、", reservedTimeSlots);  // 出力→Set(4) { 3, 7,8, 10 }．１２時、１６時（２時間枠）、１９時
+    
       const buttons = [];
-      let rowButtons = []; // ボタンをグループ化するための配列
       for (let i = 0; i < 11; i++) {
           const hour = i + 9;
           const timeSlot = `${hour}時-`;
 
-          const isReserved = reservedTimeSlots.has(i);
+           // ボタンが押されたときに予約可能かどうかを確認
+          const isReserved = reservedTimeSlots.has(i);  // isReservedには`i=0`:`false`が格納される？
           const buttonStyle = isReserved ? 'secondary' : 'primary';
           const buttonColor = isReserved ? '#AA0000' : '#00AA00';
 
           const button = {
-              type: 'button',
-              action: {
-                  type: 'postback',
-                  label: timeSlot,
-                  data: `time&${orderedMenu}&${selectedDate}&${i}`,
-              },
-              style: buttonStyle,
-              color: buttonColor,
-              margin: 'md',
+            type: 'button',
+            action: {
+              type: 'postback',
+              label: timeSlot,
+              data: `time&${orderedMenu}&${selectedDate}&${i}`,
+            },
+            style: buttonStyle,
+            color: buttonColor,
+            margin: 'md',
+            //disabled: buttonDisabled, // 予約済みの場合はボタンを無効にする
           };
-          rowButtons.push(button); // ボタンをグループに追加
-
-          // 3つのボタンが追加されたら、rowButtonsをbuttonsに追加して新しいグループを作成
-          if (rowButtons.length === 2 || i === 10) {
-              buttons.push({
-                  type: 'box',
-                  layout: 'horizontal',
-                  contents: [...rowButtons], // rowButtonsのコピーを追加
-              });
-              rowButtons = []; // rowButtonsをリセット
-          }
+          buttons.push(button);
       }
 
       buttons.push({
@@ -777,12 +770,18 @@ const askTime = async (ev, orderedMenu, selectedDate) => {
               body: {
                   type: 'box',
                   layout: 'vertical',
-                  contents: buttons, // グループ化されたボタンの配列をcontentsに追加
+                  contents: [
+                      {
+                          type: 'box',
+                          layout: 'vertical',
+                          contents: buttons,
+                      },
+                  ],
               },
           },
       });
-  } catch (error) {
-      console.error('Error fetching reserved times', error);
+  } catch {
+    console.error('Error fetching reserved times', error);
   }
 };
 
