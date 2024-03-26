@@ -732,7 +732,7 @@ const askTime = async (ev, orderedMenu, selectedDate) => {
           rowButtons.push(button); // ボタンをグループに追加
 
           // 3つのボタンが追加されたら、rowButtonsをbuttonsに追加して新しいグループを作成
-          if (rowButtons.length === 3 || i === 10) {
+          if (rowButtons.length === 2 || i === 10) {
               buttons.push({
                   type: 'box',
                   layout: 'horizontal',
