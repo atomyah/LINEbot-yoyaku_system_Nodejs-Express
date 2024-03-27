@@ -352,15 +352,16 @@ const handlePostbackEvent = async (ev) => {
   // 4は希望メニューの「ﾏｯｻｰｼﾞ&ﾊﾟｯｸ」のこと、3は予約時間帯１２時台を表す．
   
 
-  // 予約をすでに入れているかの確認．ただし「予約キャンセル」フェーズの場合は382行目の処理へ飛ばさなければならない．
-  // const nextReservation = await checkNextReservation(ev);
-  // if (nextReservation.length && splitData[0] !== 'delete') {
-  //   // ユーザーが既に予約を持っている場合の処理
-  //   return client.replyMessage(ev.replyToken, {
-  //     type: "text",
-  //     text: "すでに予約を入れてます。変更したい場合は今の予約を一旦「キャンセル」頂き、あらためて新規に予約して下さい。"
-  //   });
-  // } else {
+  // 予約をすでに入れているかの確認．「一人につき予約は一つ」制限．
+  // ただし「予約キャンセル」フェーズ（splitData[0] === 'delete'）の場合は462行目の処理へ飛ばさなければならない．
+  const nextReservation = await checkNextReservation(ev);
+  if (nextReservation.length && splitData[0] !== 'delete') {
+    // ユーザーが既に予約を持っている場合の処理
+    return client.replyMessage(ev.replyToken, {
+      type: "text",
+      text: "すでに予約を入れてます。変更したい場合は今の予約を一旦「キャンセル」頂き、あらためて新規に予約して下さい。"
+    });
+  } else {
 
       if(splitData[0] === 'menu'){
           const orderedMenu = splitData[1]; // splitData[1]には,0,1,2のいずれかの文字列が入ってる．
@@ -487,7 +488,7 @@ const handlePostbackEvent = async (ev) => {
         });
       }
       
-  // }
+   }
 }
 
 /// 施術開始時間を1970年1/1 0時からのミリ秒で取得する.
