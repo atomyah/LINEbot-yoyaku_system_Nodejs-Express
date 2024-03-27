@@ -248,7 +248,7 @@ const handleMessageEvent = async (ev) => {
     }else{
         return client.replyMessage(ev.replyToken,{
             "type":"text",
-            "text":`${profile.displayName}さん、今${text}って言いました？`
+            "text":`${profile.displayName}様、「${text}」は予約に関係のない文章です`
         });
     }
 }
