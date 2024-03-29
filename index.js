@@ -93,6 +93,9 @@ const lineBot = async (req, res) => {
                 break;
             case 'postback':
                 await handlePostbackEvent(ev);
+            case 'unfollow':
+              await handleUnfollowEvent(ev);
+              break;
         }
     };
 
@@ -140,6 +143,21 @@ const greeting_follow = async (ev) => {
 
  }
  
+
+// ユーザーがボットをブロックまたは削除した際に、対応するユーザー情報をusersテーブルから削除.
+const handleUnfollowEvent = async (ev) => {
+  const deleteQuery = {
+      text: 'DELETE FROM users WHERE line_uid = $1',
+      values: [ev.source.userId]
+  };
+
+  try {
+      await connection.query(deleteQuery);
+      console.log(`User ${ev.source.userId} は削除されました.`);
+  } catch (error) {
+      console.error('Error deleting user:', error);
+  }
+}
 
 
 // handleMessageEvent関数（'予約する'のmessageだった場合Flex Messageを表示．その他の場合オウム返し）
