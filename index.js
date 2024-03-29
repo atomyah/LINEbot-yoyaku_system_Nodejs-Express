@@ -174,22 +174,6 @@ const handleMessageEvent = async (ev) => {
     const profile = await client.getProfile(ev.source.userId);
     const text = (ev.message.type === 'text') ? ev.message.text : '';
 
-    // usersテーブルにユーザーが存在するかチェック
-    const checkUserQuery = {
-        text: 'SELECT * FROM users WHERE line_uid = $1',
-        values: [ev.source.userId]
-    };
-    const result = await connection.query(checkUserQuery);
-
-    if (result.rows.length === 0) {
-        // ユーザーがusersテーブルに存在しない場合の処理
-        // return返しで先に進まない・・・はず。もし進んでしまうようならelse{}で`if(text === '予約する'){以下のコードを囲むしかない．
-        return client.replyMessage(ev.replyToken, {
-            type: "text",
-            text: "友達登録していただいた方のみ予約BOTをご利用いただけます。友達登録がまだの方は友達登録をお願いします。"
-        });
-    }
-
     if(text === '予約する'){
         orderChoice(ev);
         // orderChoice(ev)からpostbackの値（menu&0,menu&1,menu&2のどれか）を取得し、handlePostbackEvent()へ．
