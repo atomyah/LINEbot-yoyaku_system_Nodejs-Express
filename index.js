@@ -262,16 +262,9 @@ const checkNextReservation = (ev) => {
     const id = ev.source.userId;
     const nowTime = new Date().getTime();
 
-    // $1 は、PostgreSQLのパラメータ化されたクエリ(Parameterized Query)において、プレースホルダーとして使用される記号.
-    // line_uid = $1の$1の部分に、実際の値が代入される．代入される値は、valuesプロパティで指定される．
-    // 実際に実行されるクエリは以下のようになる。
-    // SELECT * FROM reservations WHERE line_uid = 'U559cea57076f1f2383db950ef23125ac' ORDER BY starttime ASC;
-    // ${id}の部分は、${}で囲まれた部分、ここではidという変数の値が埋め込まれてる．[]で囲まれていることから配列である．
-    // valuesプロパティは、クエリ内のプレースホルダーに実際の値を割り当てるためのもの. values: [`${id},${name}`]など複数指定でき、
-    // SELECT文でwhere line_uid = $1 and name = $2など複数のプレースホルダーを使える.
     const selectQuery = {
-      text:'SELECT * FROM reservations WHERE line_uid = $1 ORDER BY starttime ASC;', // const id = ev.source.userId;で取得したidとreservationsテーブルのline_uidが一致するものを全件取得．
-      values: [`${id}`]
+      text: 'SELECT * FROM reservations WHERE line_uid = $1 AND starttime > $2 ORDER BY starttime ASC;',
+      values: [`${id}`, nowTime]
     };
 
     connection.query(selectQuery)
