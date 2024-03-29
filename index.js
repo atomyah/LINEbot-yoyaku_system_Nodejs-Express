@@ -179,6 +179,12 @@ const handleMessageEvent = async (ev) => {
         // orderChoice(ev)からpostbackの値（menu&0,menu&1,menu&2のどれか）を取得し、handlePostbackEvent()へ．
     }else if(text === '予約確認'){
         const nextReservation = await checkNextReservation(ev); // nextReservationは配列はcheckNextReservation(ev)から配列として返ってくる．
+        if(!nextReservation){
+          return client.replyMessage(ev.replyToken,{
+            "type":"text",
+            "text":`予約は入っておりません\uDBC0\uDC22`
+          });
+        }
         const startTimestamp = nextReservation[0].starttime;
         const date = dateConversion(startTimestamp);
         const menu = MENU[parseInt(nextReservation[0].menu)];
