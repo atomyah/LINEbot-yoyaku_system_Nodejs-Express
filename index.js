@@ -179,19 +179,20 @@ const handleMessageEvent = async (ev) => {
         // orderChoice(ev)からpostbackの値（menu&0,menu&1,menu&2のどれか）を取得し、handlePostbackEvent()へ．
     }else if(text === '予約確認'){
         const nextReservation = await checkNextReservation(ev); // nextReservationは配列はcheckNextReservation(ev)から配列として返ってくる．
-        if(!nextReservation){
+        if(nextReservation.length){
+          const startTimestamp = nextReservation[0].starttime;
+          const date = dateConversion(startTimestamp);
+          const menu = MENU[parseInt(nextReservation[0].menu)];
+          return client.replyMessage(ev.replyToken,{
+            "type":"text",
+            "text":`次回予約は${date}、${menu}でお取りしてます\uDBC0\uDC22`
+          });
+        }else{
           return client.replyMessage(ev.replyToken,{
             "type":"text",
             "text":`予約は入っておりません\uDBC0\uDC22`
           });
         }
-        const startTimestamp = nextReservation[0].starttime;
-        const date = dateConversion(startTimestamp);
-        const menu = MENU[parseInt(nextReservation[0].menu)];
-        return client.replyMessage(ev.replyToken,{
-          "type":"text",
-          "text":`次回予約は${date}、${menu}でお取りしてます\uDBC0\uDC22`
-        });
     }else if(text === '予約キャンセル'){
       const nextReservation = await checkNextReservation(ev);
       // nextReservationの中身：[{id:1, line_uid:'U559cea57076f1f2383db950ef23125ac', name:'Atom', scheduledate:2024-04-01T00:00:00.000Z, starttime:'1711929600000', endtime:'1711930800000', menu:'0'}]
